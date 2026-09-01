@@ -1,4 +1,6 @@
-import { Candle, Pivot, WaveAnalysis, WaveCount, WavePoint, Wave2To3Tracker } from "../types.js";
+import { Candle, Pivot, WaveAnalysis, WaveChainPoint, WaveChainRun, WaveCount, WaveLabel, WavePoint, Wave2To3Tracker } from "../types.js";
+
+type Six = [Pivot, Pivot, Pivot, Pivot, Pivot, Pivot];
 
 export function computeZigzag(candles: Candle[], deviationPct = 3): Pivot[] {
   if (candles.length < 3) return [];
@@ -7,7 +9,6 @@ export function computeZigzag(candles: Candle[], deviationPct = 3): Pivot[] {
   let up = true;
   let extremeIdx = 0;
   let extremePrice = candles[0].close;
-  let lastPivotIdx = -1;
 
   for (let i = 1; i < candles.length; i++) {
     const high = candles[i].high;
@@ -15,15 +16,14 @@ export function computeZigzag(candles: Candle[], deviationPct = 3): Pivot[] {
 
     if (up) {
       if (high > extremePrice) {
+        // Extending the current up-leg's extreme. Checking for a reversal in
+        // this same branch (rather than unconditionally) is what prevents a
+        // single wide-range candle from being recorded as both a high and a
+        // low pivot at the same index — a duplicate the chart can't render.
         extremePrice = high;
         extremeIdx = i;
-      }
-      const dropPct = ((extremePrice - low) / extremePrice) * 100;
-      // Guard against a same-candle whipsaw producing two pivots on one index,
-      // which would violate the chart's strictly-ascending-time requirement.
-      if (dropPct >= deviationPct && extremeIdx !== lastPivotIdx) {
+      } else if (((extremePrice - low) / extremePrice) * 100 >= deviationPct) {
         pivots.push({ index: extremeIdx, time: candles[extremeIdx].time, price: extremePrice, type: "high" });
-        lastPivotIdx = extremeIdx;
         up = false;
         extremePrice = low;
         extremeIdx = i;
@@ -32,11 +32,8 @@ export function computeZigzag(candles: Candle[], deviationPct = 3): Pivot[] {
       if (low < extremePrice) {
         extremePrice = low;
         extremeIdx = i;
-      }
-      const risePct = ((high - extremePrice) / extremePrice) * 100;
-      if (risePct >= deviationPct && extremeIdx !== lastPivotIdx) {
+      } else if (((high - extremePrice) / extremePrice) * 100 >= deviationPct) {
         pivots.push({ index: extremeIdx, time: candles[extremeIdx].time, price: extremePrice, type: "low" });
-        lastPivotIdx = extremeIdx;
         up = true;
         extremePrice = high;
         extremeIdx = i;
@@ -45,7 +42,7 @@ export function computeZigzag(candles: Candle[], deviationPct = 3): Pivot[] {
   }
 
   // final tentative (unconfirmed / still-forming) swing extreme
-  if (extremeIdx !== lastPivotIdx) {
+  if (pivots.length === 0 || pivots[pivots.length - 1].index !== extremeIdx) {
     pivots.push({ index: extremeIdx, time: candles[extremeIdx].time, price: extremePrice, type: up ? "high" : "low" });
   }
 
@@ -301,10 +298,66 @@ function detectWave2To3(pivots: Pivot[]): Wave2To3Tracker {
   };
 }
 
+function chainPoint(p: Pivot, label: WaveLabel | null, phase: WaveChainPoint["phase"]): WaveChainPoint {
+  return { time: p.time, price: p.price, index: p.index, type: p.type, label, phase };
+}
+
+const IMPULSE_LABELS: WaveLabel[] = ["1", "2", "3", "4", "5"];
+const CORRECTIVE_LABELS: WaveLabel[] = ["A", "B", "C"];
+
+/**
+ * Builds a continuous, whole-history wave map: alternating impulse (1-2-3-4-5)
+ * and corrective (A-B-C) legs chained end-to-end, the way a manually-annotated
+ * Elliott Wave chart reads. Impulses must pass the standard hard rules; once an
+ * impulse validates, the next 3 pivots are taken unconditionally as its A-B-C
+ * (corrective structure is far more variable, so we don't gate on it) before
+ * trying to extend the chain with another validated impulse. A run ends where
+ * the next impulse fails to validate; scanning then resumes to look for a new run.
+ */
+export function buildWaveChain(pivots: Pivot[]): WaveChainRun[] {
+  const runs: WaveChainRun[] = [];
+  let i = 0;
+
+  while (i + 5 < pivots.length) {
+    const window = pivots.slice(i, i + 6) as Six;
+    const isUp = window[0].type === "low";
+    const scored = scoreImpulse(window, isUp);
+    if (!scored) {
+      i++;
+      continue;
+    }
+
+    const points: WaveChainPoint[] = [chainPoint(window[0], null, "impulse")];
+    IMPULSE_LABELS.forEach((label, k) => points.push(chainPoint(window[k + 1], label, "impulse")));
+    let cursor = i + 5;
+
+    // Keep extending: attach a corrective ABC, then try another validated impulse, repeat.
+    while (cursor + 3 < pivots.length) {
+      CORRECTIVE_LABELS.forEach((label, k) => points.push(chainPoint(pivots[cursor + k + 1], label, "corrective")));
+      cursor += 3;
+
+      if (cursor + 5 >= pivots.length) break;
+      const nextWindow = pivots.slice(cursor, cursor + 6) as Six;
+      const nextIsUp = nextWindow[0].type === "low";
+      const nextScored = scoreImpulse(nextWindow, nextIsUp);
+      if (!nextScored) break;
+
+      IMPULSE_LABELS.forEach((label, k) => points.push(chainPoint(nextWindow[k + 1], label, "impulse")));
+      cursor += 5;
+    }
+
+    runs.push({ points });
+    i = cursor;
+  }
+
+  return runs;
+}
+
 export function analyzeWaves(candles: Candle[], deviationPct = 3): WaveAnalysis {
   const pivots = computeZigzag(candles, deviationPct);
   const candidates = findImpulseCandidates(pivots);
   const wave2to3 = detectWave2To3(pivots);
+  const waveChain = buildWaveChain(pivots);
 
   return {
     bestCount: candidates[0] ?? null,
@@ -315,6 +368,7 @@ export function analyzeWaves(candles: Candle[], deviationPct = 3): WaveAnalysis 
       note: wave2to3.note,
     },
     wave2to3,
+    waveChain,
     pivots,
   };
 }
