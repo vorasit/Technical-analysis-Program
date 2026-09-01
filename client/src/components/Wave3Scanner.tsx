@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { scanWave3 } from "../api";
 import { formatPrice } from "../format";
+import SymbolLogo from "./SymbolLogo";
 import type { Interval, Market, ScanResult } from "../types";
 
 interface Props {
@@ -61,7 +62,10 @@ export default function Wave3Scanner({ market, interval, deviation, onOpenSymbol
           <tbody>
             {results.map((r) => (
               <tr key={r.symbol} className={r.wave2to3.phase !== "none" ? `row-${r.wave2to3.phase}` : ""}>
-                <td className="mono">{r.symbol}</td>
+                <td className="mono symbol-cell">
+                  <SymbolLogo symbol={r.symbol} market={r.market} size={20} />
+                  {r.symbol}
+                </td>
                 <td>{r.name}</td>
                 <td className="mono">{formatPrice(r.lastPrice)}</td>
                 <td>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getSymbols } from "../api";
+import SymbolLogo from "./SymbolLogo";
 import type { Market, SymbolInfo } from "../types";
 
 const MARKET_LABEL: Record<Market, string> = {
@@ -78,8 +79,11 @@ export default function Sidebar({ market, onMarketChange, selectedSymbol, onSele
                 className={`symbol-item ${s.symbol === selectedSymbol ? "active" : ""}`}
                 onClick={() => onSelectSymbol(s)}
               >
-                <span className="symbol-code">{s.symbol}</span>
-                <span className="symbol-name">{s.name}</span>
+                <SymbolLogo symbol={s.symbol} market={s.market} size={22} />
+                <span className="symbol-text">
+                  <span className="symbol-code">{s.symbol}</span>
+                  <span className="symbol-name">{s.name}</span>
+                </span>
               </button>
             ))}
             <div className="symbol-list-heading">รายการ</div>
@@ -91,8 +95,11 @@ export default function Sidebar({ market, onMarketChange, selectedSymbol, onSele
             className={`symbol-item ${s.symbol === selectedSymbol ? "active" : ""}`}
             onClick={() => onSelectSymbol(s)}
           >
-            <span className="symbol-code">{s.symbol}</span>
-            <span className="symbol-name">{s.name}</span>
+            <SymbolLogo symbol={s.symbol} market={s.market} size={22} />
+            <span className="symbol-text">
+              <span className="symbol-code">{s.symbol}</span>
+              <span className="symbol-name">{s.name}</span>
+            </span>
           </button>
         ))}
         {filtered.length === 0 && extraRecents.length === 0 && (
