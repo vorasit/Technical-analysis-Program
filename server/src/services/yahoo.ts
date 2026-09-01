@@ -34,13 +34,24 @@ export async function fetchYahooCandles(symbol: string, interval: Interval): Pro
       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
     },
   });
-  if (!res.ok) {
-    throw new Error(`Yahoo API error ${res.status}: ${await res.text()}`);
+  const body = await res.text();
+  const data = (() => {
+    try {
+      return JSON.parse(body) as YahooChartResult;
+    } catch {
+      return null;
+    }
+  })();
+
+  if (!res.ok || !data) {
+    const description = (data?.chart.error as { description?: string } | undefined)?.description;
+    throw new Error(description ? `Symbol not found: ${symbol} (${description})` : `Yahoo API error ${res.status}: ${body}`);
   }
-  const data = (await res.json()) as YahooChartResult;
+
   const result = data.chart.result?.[0];
   if (!result) {
-    throw new Error(`No data returned for symbol ${symbol}`);
+    const description = (data.chart.error as { description?: string } | undefined)?.description;
+    throw new Error(`Symbol not found: ${symbol}${description ? ` (${description})` : ""}`);
   }
   const { timestamp } = result;
   const quote = result.indicators.quote[0];

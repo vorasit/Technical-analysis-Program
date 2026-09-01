@@ -140,6 +140,14 @@
   color: #8b949e;
 }
 
+.symbol-list-heading {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6e7681;
+  padding: 8px 10px 4px;
+}
+
 .chart-area {
   flex: 1;
   display: flex;

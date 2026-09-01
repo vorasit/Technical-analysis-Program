@@ -1,3 +1,4 @@
+import { formatPrice } from "../format";
 import type { Wave2To3Tracker, WaveAnalysis, WaveCount } from "../types";
 
 function fmtPct(v: number | undefined): string {
@@ -9,9 +10,7 @@ function fmtDate(t: number): string {
   return new Date(t * 1000).toLocaleDateString();
 }
 
-function fmtPrice(v: number): string {
-  return v.toLocaleString(undefined, { maximumFractionDigits: v < 10 ? 4 : 2 });
-}
+const fmtPrice = formatPrice;
 
 const PHASE_LABEL: Record<Wave2To3Tracker["phase"], string> = {
   none: "ยังไม่เข้าเงื่อนไข Wave 1-2",

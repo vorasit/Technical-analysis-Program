@@ -14,6 +14,27 @@ const DEFAULT_SYMBOL: Record<Market, SymbolInfo> = {
   crypto: { symbol: "BTCUSDT", name: "Bitcoin", market: "crypto" },
 };
 
+const RECENT_KEY_PREFIX = "ta-recent-symbols:";
+const MAX_RECENTS = 8;
+
+function loadRecents(market: Market): SymbolInfo[] {
+  try {
+    const raw = localStorage.getItem(RECENT_KEY_PREFIX + market);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRecents(market: Market, list: SymbolInfo[]) {
+  try {
+    localStorage.setItem(RECENT_KEY_PREFIX + market, JSON.stringify(list.slice(0, MAX_RECENTS)));
+  } catch {
+    // localStorage unavailable (private mode, etc.) — recents just won't persist.
+  }
+}
+
 type View = "chart" | "scanner";
 
 export default function App() {
@@ -25,6 +46,7 @@ export default function App() {
   const [data, setData] = useState<AnalyzeResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [recents, setRecents] = useState<SymbolInfo[]>(() => loadRecents(market));
   const [overlays, setOverlays] = useState<OverlayToggles>({
     sma20: true,
     sma50: true,
@@ -43,7 +65,17 @@ export default function App() {
     setError(null);
     analyze(market, selected.symbol, interval, deviation)
       .then((d) => {
-        if (!cancelled) setData(d);
+        if (cancelled) return;
+        setData(d);
+        // Only remember a symbol once we know it actually resolves to real data.
+        setRecents((prev) => {
+          const next = [selected, ...prev.filter((r) => r.symbol.toUpperCase() !== selected.symbol.toUpperCase())].slice(
+            0,
+            MAX_RECENTS
+          );
+          saveRecents(market, next);
+          return next;
+        });
       })
       .catch((e) => {
         if (!cancelled) setError(e.message);
@@ -59,6 +91,7 @@ export default function App() {
   function handleMarketChange(m: Market) {
     setMarket(m);
     setSelected(DEFAULT_SYMBOL[m]);
+    setRecents(loadRecents(m));
   }
 
   function handleOpenFromScanner(symbol: string) {
@@ -100,7 +133,13 @@ export default function App() {
       </header>
 
       <div className="body">
-        <Sidebar market={market} onMarketChange={handleMarketChange} selectedSymbol={selected.symbol} onSelectSymbol={setSelected} />
+        <Sidebar
+          market={market}
+          onMarketChange={handleMarketChange}
+          selectedSymbol={selected.symbol}
+          onSelectSymbol={setSelected}
+          recents={recents}
+        />
 
         {view === "chart" ? (
           <>
