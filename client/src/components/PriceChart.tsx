@@ -1,0 +1,258 @@
+import { useEffect, useLayoutEffect, useRef } from "react";
+import {
+  CandlestickSeries,
+  ColorType,
+  createChart,
+  createSeriesMarkers,
+  HistogramSeries,
+  LineSeries,
+} from "lightweight-charts";
+import type { IChartApi, IPriceLine, ISeriesApi, ISeriesMarkersPluginApi, SeriesMarker, Time, UTCTimestamp } from "lightweight-charts";
+import type { AnalyzeResponse } from "../types";
+
+export interface OverlayToggles {
+  sma20: boolean;
+  sma50: boolean;
+  ema12: boolean;
+  ema26: boolean;
+  bollinger: boolean;
+  wave: boolean;
+  volume: boolean;
+}
+
+interface Props {
+  data: AnalyzeResponse | null;
+  overlays: OverlayToggles;
+}
+
+const WAVE_COLOR = "#f5c451";
+
+export default function PriceChart({ data, overlays }: Props) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const chartRef = useRef<IChartApi | null>(null);
+  const seriesRef = useRef<{
+    candle: ISeriesApi<"Candlestick">;
+    volume: ISeriesApi<"Histogram">;
+    sma20: ISeriesApi<"Line">;
+    sma50: ISeriesApi<"Line">;
+    ema12: ISeriesApi<"Line">;
+    ema26: ISeriesApi<"Line">;
+    bbUpper: ISeriesApi<"Line">;
+    bbMiddle: ISeriesApi<"Line">;
+    bbLower: ISeriesApi<"Line">;
+    waveLine: ISeriesApi<"Line">;
+    rsi: ISeriesApi<"Line">;
+    macdLine: ISeriesApi<"Line">;
+    macdSignal: ISeriesApi<"Line">;
+    macdHist: ISeriesApi<"Histogram">;
+  } | null>(null);
+  const markersRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
+  const wave23LinesRef = useRef<{ breakout: IPriceLine | null; invalidation: IPriceLine | null }>({
+    breakout: null,
+    invalidation: null,
+  });
+
+  useLayoutEffect(() => {
+    if (!containerRef.current) return;
+
+    const chart = createChart(containerRef.current, {
+      autoSize: true,
+      layout: {
+        background: { type: ColorType.Solid, color: "#0e1117" },
+        textColor: "#c9d1d9",
+      },
+      grid: {
+        vertLines: { color: "#1c212b" },
+        horzLines: { color: "#1c212b" },
+      },
+      rightPriceScale: { borderColor: "#30363d" },
+      timeScale: { borderColor: "#30363d", timeVisible: true },
+      crosshair: { mode: 0 },
+    });
+
+    chart.addPane();
+    chart.addPane();
+    const panes = chart.panes();
+    panes[0].setStretchFactor(5);
+    panes[1].setStretchFactor(1.6);
+    panes[2].setStretchFactor(1.6);
+
+    const candle = chart.addSeries(
+      CandlestickSeries,
+      {
+        upColor: "#26a69a",
+        downColor: "#ef5350",
+        borderVisible: false,
+        wickUpColor: "#26a69a",
+        wickDownColor: "#ef5350",
+      },
+      0
+    );
+
+    const volume = chart.addSeries(
+      HistogramSeries,
+      {
+        priceFormat: { type: "volume" },
+        priceScaleId: "vol",
+        color: "#3a4353",
+      },
+      0
+    );
+    chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
+    candle.priceScale().applyOptions({ scaleMargins: { top: 0.05, bottom: 0.2 } });
+
+    const sma20 = chart.addSeries(LineSeries, { color: "#58a6ff", lineWidth: 1 }, 0);
+    const sma50 = chart.addSeries(LineSeries, { color: "#bc8cff", lineWidth: 1 }, 0);
+    const ema12 = chart.addSeries(LineSeries, { color: "#ffa657", lineWidth: 1 }, 0);
+    const ema26 = chart.addSeries(LineSeries, { color: "#f778ba", lineWidth: 1 }, 0);
+    const bbUpper = chart.addSeries(LineSeries, { color: "#4d5566", lineWidth: 1 }, 0);
+    const bbMiddle = chart.addSeries(LineSeries, { color: "#6e7889", lineWidth: 1 }, 0);
+    const bbLower = chart.addSeries(LineSeries, { color: "#4d5566", lineWidth: 1 }, 0);
+    const waveLine = chart.addSeries(
+      LineSeries,
+      { color: WAVE_COLOR, lineWidth: 2, lineStyle: 0, pointMarkersVisible: true },
+      0
+    );
+
+    const rsi = chart.addSeries(LineSeries, { color: "#e3b341", lineWidth: 1 }, 1);
+    rsi.createPriceLine({ price: 70, color: "#4d5566", lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: "70" });
+    rsi.createPriceLine({ price: 30, color: "#4d5566", lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: "30" });
+
+    const macdHist = chart.addSeries(HistogramSeries, { color: "#3a4353" }, 2);
+    const macdLine = chart.addSeries(LineSeries, { color: "#58a6ff", lineWidth: 1 }, 2);
+    const macdSignal = chart.addSeries(LineSeries, { color: "#ffa657", lineWidth: 1 }, 2);
+
+    const markers = createSeriesMarkers(candle, []);
+
+    chartRef.current = chart;
+    seriesRef.current = {
+      candle,
+      volume,
+      sma20,
+      sma50,
+      ema12,
+      ema26,
+      bbUpper,
+      bbMiddle,
+      bbLower,
+      waveLine,
+      rsi,
+      macdLine,
+      macdSignal,
+      macdHist,
+    };
+    markersRef.current = markers;
+
+    return () => {
+      chart.remove();
+      chartRef.current = null;
+      seriesRef.current = null;
+      markersRef.current = null;
+      wave23LinesRef.current = { breakout: null, invalidation: null };
+    };
+  }, []);
+
+  useEffect(() => {
+    const s = seriesRef.current;
+    if (!s || !data) return;
+
+    s.candle.setData(
+      data.candles.map((c) => ({
+        time: c.time as UTCTimestamp,
+        open: c.open,
+        high: c.high,
+        low: c.low,
+        close: c.close,
+      }))
+    );
+    s.volume.setData(
+      data.candles.map((c) => ({
+        time: c.time as UTCTimestamp,
+        value: c.volume,
+        color: c.close >= c.open ? "#26a69a55" : "#ef535055",
+      }))
+    );
+    s.sma20.setData(data.indicators.sma20.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })));
+    s.sma50.setData(data.indicators.sma50.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })));
+    s.ema12.setData(data.indicators.ema12.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })));
+    s.ema26.setData(data.indicators.ema26.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })));
+    s.bbUpper.setData(data.indicators.bollinger.map((p) => ({ time: p.time as UTCTimestamp, value: p.upper })));
+    s.bbMiddle.setData(data.indicators.bollinger.map((p) => ({ time: p.time as UTCTimestamp, value: p.middle })));
+    s.bbLower.setData(data.indicators.bollinger.map((p) => ({ time: p.time as UTCTimestamp, value: p.lower })));
+    s.rsi.setData(data.indicators.rsi14.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })));
+    s.macdLine.setData(data.indicators.macd.map((p) => ({ time: p.time as UTCTimestamp, value: p.macd })));
+    s.macdSignal.setData(data.indicators.macd.map((p) => ({ time: p.time as UTCTimestamp, value: p.signal })));
+    s.macdHist.setData(
+      data.indicators.macd.map((p) => ({
+        time: p.time as UTCTimestamp,
+        value: p.histogram,
+        color: p.histogram >= 0 ? "#26a69a" : "#ef5350",
+      }))
+    );
+
+    const best = data.wave.bestCount;
+    if (best) {
+      s.waveLine.setData(best.points.map((p) => ({ time: p.time as UTCTimestamp, value: p.price })));
+      const markers: SeriesMarker<Time>[] = best.points.map((p) => ({
+        time: p.time as UTCTimestamp,
+        position: p.label === "1" || p.label === "3" || p.label === "5" || p.label === "B" ? "aboveBar" : "belowBar",
+        color: p.label === "3" ? "#ff5f5f" : WAVE_COLOR,
+        shape: "circle",
+        text: p.label,
+      }));
+      markersRef.current?.setMarkers(markers);
+    } else {
+      s.waveLine.setData([]);
+      markersRef.current?.setMarkers([]);
+    }
+
+    const lines = wave23LinesRef.current;
+    if (lines.breakout) {
+      s.candle.removePriceLine(lines.breakout);
+      lines.breakout = null;
+    }
+    if (lines.invalidation) {
+      s.candle.removePriceLine(lines.invalidation);
+      lines.invalidation = null;
+    }
+    const tracker = data.wave.wave2to3;
+    if (tracker.phase !== "none") {
+      if (tracker.breakoutLevel !== null) {
+        lines.breakout = s.candle.createPriceLine({
+          price: tracker.breakoutLevel,
+          color: tracker.phase === "confirmed" ? "#3fb950" : "#e3b341",
+          lineWidth: 2,
+          lineStyle: 2,
+          axisLabelVisible: true,
+          title: "Wave 3 breakout",
+        });
+      }
+      if (tracker.invalidationLevel !== null) {
+        lines.invalidation = s.candle.createPriceLine({
+          price: tracker.invalidationLevel,
+          color: "#f85149",
+          lineWidth: 1,
+          lineStyle: 3,
+          axisLabelVisible: true,
+          title: "invalidation",
+        });
+      }
+    }
+  }, [data]);
+
+  useEffect(() => {
+    const s = seriesRef.current;
+    if (!s) return;
+    s.sma20.applyOptions({ visible: overlays.sma20 });
+    s.sma50.applyOptions({ visible: overlays.sma50 });
+    s.ema12.applyOptions({ visible: overlays.ema12 });
+    s.ema26.applyOptions({ visible: overlays.ema26 });
+    s.bbUpper.applyOptions({ visible: overlays.bollinger });
+    s.bbMiddle.applyOptions({ visible: overlays.bollinger });
+    s.bbLower.applyOptions({ visible: overlays.bollinger });
+    s.waveLine.applyOptions({ visible: overlays.wave });
+    s.volume.applyOptions({ visible: overlays.volume });
+  }, [overlays]);
+
+  return <div ref={containerRef} style={{ width: "100%", height: "100%" }} />;
+}

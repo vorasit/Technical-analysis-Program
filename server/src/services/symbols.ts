@@ -1,0 +1,43 @@
+import { Market, SymbolInfo } from "../types.js";
+
+export const SYMBOLS: Record<Market, SymbolInfo[]> = {
+  stock: [
+    { symbol: "AAPL", name: "Apple Inc.", market: "stock" },
+    { symbol: "MSFT", name: "Microsoft Corp.", market: "stock" },
+    { symbol: "NVDA", name: "NVIDIA Corp.", market: "stock" },
+    { symbol: "GOOGL", name: "Alphabet Inc.", market: "stock" },
+    { symbol: "AMZN", name: "Amazon.com Inc.", market: "stock" },
+    { symbol: "META", name: "Meta Platforms", market: "stock" },
+    { symbol: "TSLA", name: "Tesla Inc.", market: "stock" },
+    { symbol: "AMD", name: "Advanced Micro Devices", market: "stock" },
+    { symbol: "NFLX", name: "Netflix Inc.", market: "stock" },
+    { symbol: "PTT.BK", name: "PTT PCL (SET)", market: "stock" },
+    { symbol: "AOT.BK", name: "Airports of Thailand (SET)", market: "stock" },
+    { symbol: "CPALL.BK", name: "CP All (SET)", market: "stock" },
+    { symbol: "SCB.BK", name: "SCB X (SET)", market: "stock" },
+    { symbol: "ADVANC.BK", name: "Advanced Info Service (SET)", market: "stock" },
+    { symbol: "DELTA.BK", name: "Delta Electronics (SET)", market: "stock" },
+  ],
+  commodity: [
+    { symbol: "GC=F", name: "Gold Futures", market: "commodity" },
+    { symbol: "SI=F", name: "Silver Futures", market: "commodity" },
+    { symbol: "PL=F", name: "Platinum Futures", market: "commodity" },
+    { symbol: "HG=F", name: "Copper Futures", market: "commodity" },
+    { symbol: "CL=F", name: "Crude Oil WTI Futures", market: "commodity" },
+    { symbol: "NG=F", name: "Natural Gas Futures", market: "commodity" },
+  ],
+  crypto: [
+    { symbol: "BTCUSDT", name: "Bitcoin", market: "crypto" },
+    { symbol: "ETHUSDT", name: "Ethereum", market: "crypto" },
+    { symbol: "BNBUSDT", name: "BNB", market: "crypto" },
+    { symbol: "SOLUSDT", name: "Solana", market: "crypto" },
+    { symbol: "XRPUSDT", name: "XRP", market: "crypto" },
+    { symbol: "ADAUSDT", name: "Cardano", market: "crypto" },
+    { symbol: "DOGEUSDT", name: "Dogecoin", market: "crypto" },
+    { symbol: "AVAXUSDT", name: "Avalanche", market: "crypto" },
+    { symbol: "LINKUSDT", name: "Chainlink", market: "crypto" },
+    { symbol: "TONUSDT", name: "Toncoin", market: "crypto" },
+    { symbol: "DOTUSDT", name: "Polkadot", market: "crypto" },
+    { symbol: "SUIUSDT", name: "Sui", market: "crypto" },
+  ],
+};
