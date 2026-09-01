@@ -18,6 +18,7 @@ export interface OverlayToggles {
   bollinger: boolean;
   wave: boolean;
   volume: boolean;
+  cdc: boolean;
 }
 
 interface Props {
@@ -26,6 +27,12 @@ interface Props {
 }
 
 const WAVE_COLOR = "#f5c451";
+const CDC_COLORS: Record<"green" | "blue" | "red" | "yellow", string> = {
+  green: "#00c853",
+  blue: "#2962ff",
+  red: "#ef5350",
+  yellow: "#ffd600",
+};
 
 export default function PriceChart({ data, overlays }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -47,6 +54,7 @@ export default function PriceChart({ data, overlays }: Props) {
     macdHist: ISeriesApi<"Histogram">;
   } | null>(null);
   const markersRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
+  const cdcMarkersRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
   const wave23LinesRef = useRef<{ breakout: IPriceLine | null; invalidation: IPriceLine | null }>({
     breakout: null,
     invalidation: null,
@@ -123,6 +131,7 @@ export default function PriceChart({ data, overlays }: Props) {
     const macdSignal = chart.addSeries(LineSeries, { color: "#ffa657", lineWidth: 1 }, 2);
 
     const markers = createSeriesMarkers(candle, []);
+    const cdcMarkers = createSeriesMarkers(candle, []);
 
     chartRef.current = chart;
     seriesRef.current = {
@@ -142,12 +151,14 @@ export default function PriceChart({ data, overlays }: Props) {
       macdHist,
     };
     markersRef.current = markers;
+    cdcMarkersRef.current = cdcMarkers;
 
     return () => {
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
       markersRef.current = null;
+      cdcMarkersRef.current = null;
       wave23LinesRef.current = { breakout: null, invalidation: null };
     };
   }, []);
@@ -156,15 +167,6 @@ export default function PriceChart({ data, overlays }: Props) {
     const s = seriesRef.current;
     if (!s || !data) return;
 
-    s.candle.setData(
-      data.candles.map((c) => ({
-        time: c.time as UTCTimestamp,
-        open: c.open,
-        high: c.high,
-        low: c.low,
-        close: c.close,
-      }))
-    );
     s.volume.setData(
       data.candles.map((c) => ({
         time: c.time as UTCTimestamp,
@@ -239,6 +241,43 @@ export default function PriceChart({ data, overlays }: Props) {
       }
     }
   }, [data]);
+
+  useEffect(() => {
+    const s = seriesRef.current;
+    if (!s || !data) return;
+
+    const cdcMap = new Map(data.indicators.cdc.map((p) => [p.time, p]));
+
+    s.candle.setData(
+      data.candles.map((c) => {
+        const cdc = overlays.cdc ? cdcMap.get(c.time) : undefined;
+        const color = cdc ? CDC_COLORS[cdc.zone] : undefined;
+        return {
+          time: c.time as UTCTimestamp,
+          open: c.open,
+          high: c.high,
+          low: c.low,
+          close: c.close,
+          ...(color ? { color, borderColor: color, wickColor: color } : {}),
+        };
+      })
+    );
+
+    if (overlays.cdc) {
+      const cdcMarkers: SeriesMarker<Time>[] = data.indicators.cdc
+        .filter((p) => p.signal !== null)
+        .map((p) => ({
+          time: p.time as UTCTimestamp,
+          position: p.signal === "buy" ? "belowBar" : "aboveBar",
+          color: p.signal === "buy" ? CDC_COLORS.green : CDC_COLORS.red,
+          shape: p.signal === "buy" ? "arrowUp" : "arrowDown",
+          text: p.signal === "buy" ? "Buy" : "Sell",
+        }));
+      cdcMarkersRef.current?.setMarkers(cdcMarkers);
+    } else {
+      cdcMarkersRef.current?.setMarkers([]);
+    }
+  }, [data, overlays.cdc]);
 
   useEffect(() => {
     const s = seriesRef.current;

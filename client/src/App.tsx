@@ -33,6 +33,7 @@ export default function App() {
     bollinger: false,
     wave: true,
     volume: true,
+    cdc: false,
   });
 
   useEffect(() => {
@@ -117,6 +118,7 @@ export default function App() {
                       ["bollinger", "Bollinger"],
                       ["wave", "Wave"],
                       ["volume", "Volume"],
+                      ["cdc", "CDC Action Zone"],
                     ] as [keyof OverlayToggles, string][]
                   ).map(([key, label]) => (
                     <label key={key} className="toggle">
@@ -130,6 +132,14 @@ export default function App() {
                   ))}
                 </div>
               </div>
+              {overlays.cdc && (
+                <div className="cdc-legend">
+                  <span className="cdc-swatch" style={{ background: "#00c853" }} /> เขียว = โซนซื้อ (Buy Zone)
+                  <span className="cdc-swatch" style={{ background: "#2962ff" }} /> น้ำเงิน = ขาขึ้นแต่พักตัว (ระวัง)
+                  <span className="cdc-swatch" style={{ background: "#ef5350" }} /> แดง = โซนขาย (Sell Zone)
+                  <span className="cdc-swatch" style={{ background: "#ffd600" }} /> เหลือง = ขาลงแต่เด้ง (ระวัง)
+                </div>
+              )}
               <div className="chart-container">
                 {loading && <div className="overlay-message">กำลังโหลดข้อมูล...</div>}
                 {error && <div className="overlay-message error">{error}</div>}

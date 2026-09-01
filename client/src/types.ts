@@ -35,6 +35,16 @@ export interface BollingerPoint {
   lower: number;
 }
 
+export type CdcZone = "green" | "blue" | "red" | "yellow";
+
+export interface CdcPoint {
+  time: number;
+  ema1: number;
+  ema2: number;
+  zone: CdcZone;
+  signal: "buy" | "sell" | null;
+}
+
 export interface Indicators {
   sma20: IndicatorPoint[];
   sma50: IndicatorPoint[];
@@ -43,6 +53,7 @@ export interface Indicators {
   rsi14: IndicatorPoint[];
   macd: MacdPoint[];
   bollinger: BollingerPoint[];
+  cdc: CdcPoint[];
 }
 
 export type WaveLabel = "0" | "1" | "2" | "3" | "4" | "5" | "A" | "B" | "C";

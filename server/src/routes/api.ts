@@ -2,7 +2,7 @@ import { Router } from "express";
 import { Interval, Market } from "../types.js";
 import { SYMBOLS } from "../services/symbols.js";
 import { getCandles } from "../services/marketData.js";
-import { sma, ema, rsi, macd, bollinger } from "../services/indicators.js";
+import { sma, ema, rsi, macd, bollinger, cdcActionZone } from "../services/indicators.js";
 import { analyzeWaves } from "../services/elliottWave.js";
 import { mapLimit } from "../services/concurrency.js";
 
@@ -56,6 +56,7 @@ router.get("/analyze", async (req, res) => {
         rsi14: rsi(candles, 14),
         macd: macd(candles),
         bollinger: bollinger(candles, 20, 2),
+        cdc: cdcActionZone(candles),
       },
       wave,
     });
