@@ -16,25 +16,32 @@ export function sma(candles: Candle[], period: number): IndicatorSeries[] {
   return out;
 }
 
-export function ema(candles: Candle[], period: number): IndicatorSeries[] {
+function emaOfValues(values: IndicatorSeries[], period: number): IndicatorSeries[] {
   const out: IndicatorSeries[] = [];
   const k = 2 / (period + 1);
   let prev: number | null = null;
-  for (let i = 0; i < candles.length; i++) {
-    const price = candles[i].close;
+  for (let i = 0; i < values.length; i++) {
+    const price = values[i].value;
     if (prev === null) {
       if (i === period - 1) {
-        const seed = candles.slice(0, period).reduce((s, c) => s + c.close, 0) / period;
+        const seed = values.slice(0, period).reduce((s, v) => s + v.value, 0) / period;
         prev = seed;
-        out.push({ time: candles[i].time, value: seed });
+        out.push({ time: values[i].time, value: seed });
       }
       continue;
     }
     const value: number = price * k + prev * (1 - k);
     prev = value;
-    out.push({ time: candles[i].time, value });
+    out.push({ time: values[i].time, value });
   }
   return out;
+}
+
+export function ema(candles: Candle[], period: number): IndicatorSeries[] {
+  return emaOfValues(
+    candles.map((c) => ({ time: c.time, value: c.close })),
+    period
+  );
 }
 
 export function rsi(candles: Candle[], period = 14): IndicatorSeries[] {
@@ -118,5 +125,52 @@ export function bollinger(candles: Candle[], period = 20, mult = 2): BollingerPo
     const sd = Math.sqrt(variance);
     out.push({ time: candles[i].time, upper: mean + mult * sd, middle: mean, lower: mean - mult * sd });
   }
+  return out;
+}
+
+export type CdcZone = "green" | "blue" | "red" | "yellow";
+
+export interface CdcPoint {
+  time: number;
+  ema1: number;
+  ema2: number;
+  zone: CdcZone;
+  signal: "buy" | "sell" | null;
+}
+
+/**
+ * CDC Action Zone: classifies each bar into one of 4 zones from two EMAs of a
+ * lightly-smoothed price (Ema1 fast / Ema2 slow), and flags the first bar of
+ * a Buy (entering green) or Sell (entering red) zone.
+ */
+export function cdcActionZone(candles: Candle[], fastLength = 12, slowLength = 26, apPeriod = 2): CdcPoint[] {
+  const closeSeries = candles.map((c) => ({ time: c.time, value: c.close }));
+  const shortMa = emaOfValues(closeSeries, apPeriod);
+  const ema1Series = emaOfValues(shortMa, fastLength);
+  const ema2Series = emaOfValues(shortMa, slowLength);
+
+  const shortMaMap = new Map(shortMa.map((p) => [p.time, p.value]));
+  const ema1Map = new Map(ema1Series.map((p) => [p.time, p.value]));
+
+  const out: CdcPoint[] = [];
+  let prevZone: CdcZone | null = null;
+
+  for (const p of ema2Series) {
+    const ema2 = p.value;
+    const ema1 = ema1Map.get(p.time);
+    const sMa = shortMaMap.get(p.time);
+    if (ema1 === undefined || sMa === undefined) continue;
+
+    const bulls = ema1 > ema2;
+    const zone: CdcZone = bulls ? (sMa > ema1 ? "green" : "blue") : sMa < ema1 ? "red" : "yellow";
+
+    let signal: "buy" | "sell" | null = null;
+    if (zone === "green" && prevZone !== "green") signal = "buy";
+    else if (zone === "red" && prevZone !== "red") signal = "sell";
+
+    out.push({ time: p.time, ema1, ema2, zone, signal });
+    prevZone = zone;
+  }
+
   return out;
 }
