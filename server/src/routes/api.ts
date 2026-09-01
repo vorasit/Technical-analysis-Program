@@ -5,6 +5,7 @@ import { getCandles } from "../services/marketData.js";
 import { sma, ema, rsi, macd, bollinger, cdcActionZone } from "../services/indicators.js";
 import { analyzeWaves } from "../services/elliottWave.js";
 import { mapLimit } from "../services/concurrency.js";
+import { searchSymbols } from "../services/search.js";
 
 const router = Router();
 
@@ -25,6 +26,22 @@ router.get("/symbols", (req, res) => {
     return res.status(400).json({ error: "Invalid or missing market. Use stock, commodity, or crypto." });
   }
   res.json(SYMBOLS[market]);
+});
+
+router.get("/search", async (req, res) => {
+  const market = parseMarket(req.query.market);
+  const q = typeof req.query.q === "string" ? req.query.q : "";
+
+  if (!market) {
+    return res.status(400).json({ error: "Invalid or missing market. Use stock, commodity, or crypto." });
+  }
+
+  try {
+    const results = await searchSymbols(market, q);
+    res.json(results);
+  } catch (err) {
+    res.status(502).json({ error: err instanceof Error ? err.message : "Search failed." });
+  }
 });
 
 router.get("/analyze", async (req, res) => {
