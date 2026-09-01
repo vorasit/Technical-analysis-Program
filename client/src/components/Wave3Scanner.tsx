@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { scanWave3 } from "../api";
+import { formatPrice } from "../format";
 import type { Interval, Market, ScanResult } from "../types";
 
 interface Props {
@@ -62,7 +63,7 @@ export default function Wave3Scanner({ market, interval, deviation, onOpenSymbol
               <tr key={r.symbol} className={r.wave2to3.phase !== "none" ? `row-${r.wave2to3.phase}` : ""}>
                 <td className="mono">{r.symbol}</td>
                 <td>{r.name}</td>
-                <td className="mono">{r.lastPrice.toLocaleString(undefined, { maximumFractionDigits: 4 })}</td>
+                <td className="mono">{formatPrice(r.lastPrice)}</td>
                 <td>
                   {r.wave2to3.phase === "confirmed" && <span className="badge badge-active">Wave 3 กำลังเกิด</span>}
                   {r.wave2to3.phase === "watching" && <span className="badge badge-watching">รอทะลุ Wave 3</span>}

@@ -13,9 +13,10 @@ interface Props {
   onMarketChange: (m: Market) => void;
   selectedSymbol: string;
   onSelectSymbol: (s: SymbolInfo) => void;
+  recents: SymbolInfo[];
 }
 
-export default function Sidebar({ market, onMarketChange, selectedSymbol, onSelectSymbol }: Props) {
+export default function Sidebar({ market, onMarketChange, selectedSymbol, onSelectSymbol, recents }: Props) {
   const [symbols, setSymbols] = useState<SymbolInfo[]>([]);
   const [query, setQuery] = useState("");
 
@@ -35,6 +36,22 @@ export default function Sidebar({ market, onMarketChange, selectedSymbol, onSele
     return symbols.filter((s) => s.symbol.toLowerCase().includes(q) || s.name.toLowerCase().includes(q));
   }, [symbols, query]);
 
+  // Only show recents that aren't already visible in the preset list, to avoid duplicates.
+  const extraRecents = useMemo(
+    () => recents.filter((r) => !symbols.some((s) => s.symbol.toUpperCase() === r.symbol.toUpperCase())),
+    [recents, symbols]
+  );
+
+  function handleSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== "Enter") return;
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    const upper = trimmed.toUpperCase();
+    const known = symbols.find((s) => s.symbol.toUpperCase() === upper) ?? recents.find((s) => s.symbol.toUpperCase() === upper);
+    onSelectSymbol(known ?? { symbol: upper, name: upper, market });
+    setQuery("");
+  }
+
   return (
     <aside className="sidebar">
       <div className="market-tabs">
@@ -46,11 +63,28 @@ export default function Sidebar({ market, onMarketChange, selectedSymbol, onSele
       </div>
       <input
         className="symbol-search"
-        placeholder="ค้นหาสัญลักษณ์..."
+        placeholder="ค้นหา หรือพิมพ์สัญลักษณ์แล้วกด Enter..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={handleSearchKeyDown}
       />
       <div className="symbol-list">
+        {extraRecents.length > 0 && (
+          <>
+            <div className="symbol-list-heading">ล่าสุด</div>
+            {extraRecents.map((s) => (
+              <button
+                key={`recent-${s.symbol}`}
+                className={`symbol-item ${s.symbol === selectedSymbol ? "active" : ""}`}
+                onClick={() => onSelectSymbol(s)}
+              >
+                <span className="symbol-code">{s.symbol}</span>
+                <span className="symbol-name">{s.name}</span>
+              </button>
+            ))}
+            <div className="symbol-list-heading">รายการ</div>
+          </>
+        )}
         {filtered.map((s) => (
           <button
             key={s.symbol}
@@ -61,7 +95,9 @@ export default function Sidebar({ market, onMarketChange, selectedSymbol, onSele
             <span className="symbol-name">{s.name}</span>
           </button>
         ))}
-        {filtered.length === 0 && <div className="empty-state">ไม่พบสัญลักษณ์</div>}
+        {filtered.length === 0 && extraRecents.length === 0 && (
+          <div className="empty-state">ไม่พบสัญลักษณ์ — พิมพ์แล้วกด Enter เพื่อค้นหาโดยตรง</div>
+        )}
       </div>
     </aside>
   );

@@ -11,7 +11,15 @@ export async function fetchBinanceCandles(symbol: string, interval: Interval, li
   const url = `https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(symbol)}&interval=${binanceInterval}&limit=${limit}`;
   const res = await fetch(url);
   if (!res.ok) {
-    throw new Error(`Binance API error ${res.status}: ${await res.text()}`);
+    const body = await res.text();
+    const parsed = (() => {
+      try {
+        return JSON.parse(body) as { msg?: string };
+      } catch {
+        return null;
+      }
+    })();
+    throw new Error(parsed?.msg ? `Symbol not found: ${symbol} (${parsed.msg})` : `Binance API error ${res.status}: ${body}`);
   }
   const raw = (await res.json()) as unknown[][];
   return raw.map((row) => ({

@@ -8,6 +8,7 @@ import {
   LineSeries,
 } from "lightweight-charts";
 import type { IChartApi, IPriceLine, ISeriesApi, ISeriesMarkersPluginApi, SeriesMarker, Time, UTCTimestamp } from "lightweight-charts";
+import { pricePrecision } from "../format";
 import type { AnalyzeResponse, WaveChainPoint } from "../types";
 
 export interface OverlayToggles {
@@ -38,6 +39,11 @@ const CHAIN_IMPULSE_COLOR = "#2ecc71";
 const CHAIN_CORRECTIVE_COLOR = "#ff6b81";
 const CHAIN_NUMBER_COLOR = "#3172f0";
 const CHAIN_LETTER_COLOR = "#e0455b";
+
+function pickPriceFormat(prices: number[]): { precision: number; minMove: number } {
+  const maxAbs = prices.reduce((m, p) => Math.max(m, Math.abs(p)), 0);
+  return pricePrecision(maxAbs);
+}
 
 function splitChainByPhase(points: WaveChainPoint[]): { phase: WaveChainPoint["phase"]; points: WaveChainPoint[] }[] {
   const groups: { phase: WaveChainPoint["phase"]; points: WaveChainPoint[] }[] = [];
@@ -194,6 +200,15 @@ export default function PriceChart({ data, overlays }: Props) {
     const s = seriesRef.current;
     if (!s || !data) return;
 
+    const priceFormat = { type: "price" as const, ...pickPriceFormat(data.candles.map((c) => c.close)) };
+    for (const line of [s.sma20, s.sma50, s.ema12, s.ema26, s.bbUpper, s.bbMiddle, s.bbLower, s.waveLine]) {
+      line.applyOptions({ priceFormat });
+    }
+    // MACD tracks raw price differences, so it needs the same precision as the price series itself.
+    s.macdLine.applyOptions({ priceFormat });
+    s.macdSignal.applyOptions({ priceFormat });
+    s.macdHist.applyOptions({ priceFormat });
+
     s.volume.setData(
       data.candles.map((c) => ({
         time: c.time as UTCTimestamp,
@@ -274,6 +289,8 @@ export default function PriceChart({ data, overlays }: Props) {
     if (!s || !data) return;
 
     const cdcMap = new Map(data.indicators.cdc.map((p) => [p.time, p]));
+
+    s.candle.applyOptions({ priceFormat: { type: "price", ...pickPriceFormat(data.candles.map((c) => c.close)) } });
 
     s.candle.setData(
       data.candles.map((c) => {
