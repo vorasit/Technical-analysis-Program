@@ -109,13 +109,14 @@
 
 .symbol-item {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
   width: 100%;
   background: transparent;
   border: none;
   border-radius: 6px;
-  padding: 8px 10px;
+  padding: 6px 10px;
   cursor: pointer;
   color: #c9d1d9;
   text-align: left;
@@ -130,6 +131,12 @@
   color: #79c0ff;
 }
 
+.symbol-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .symbol-code {
   font-weight: 600;
   font-size: 13px;
@@ -138,6 +145,9 @@
 .symbol-name {
   font-size: 11px;
   color: #8b949e;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .symbol-list-heading {
@@ -146,6 +156,29 @@
   letter-spacing: 0.05em;
   color: #6e7681;
   padding: 8px 10px 4px;
+}
+
+.symbol-logo {
+  border-radius: 6px;
+  object-fit: contain;
+  background: #ffffff12;
+  flex-shrink: 0;
+}
+
+.symbol-logo-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: #fff;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.symbol-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .chart-area {
@@ -164,6 +197,9 @@
 }
 
 .current-symbol {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 700;
   font-size: 15px;
   color: #f0f6fc;

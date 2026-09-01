@@ -4,6 +4,7 @@ import { analyze } from "./api";
 import PriceChart from "./components/PriceChart";
 import type { OverlayToggles } from "./components/PriceChart";
 import Sidebar from "./components/Sidebar";
+import SymbolLogo from "./components/SymbolLogo";
 import WavePanel from "./components/WavePanel";
 import Wave3Scanner from "./components/Wave3Scanner";
 import type { AnalyzeResponse, Interval, Market, SymbolInfo } from "./types";
@@ -146,6 +147,7 @@ export default function App() {
             <main className="chart-area">
               <div className="chart-toolbar">
                 <span className="current-symbol">
+                  <SymbolLogo symbol={selected.symbol} market={market} size={24} />
                   {selected.symbol} <small>{selected.name}</small>
                 </span>
                 <div className="overlay-toggles">
