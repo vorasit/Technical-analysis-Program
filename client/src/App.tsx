@@ -34,6 +34,7 @@ export default function App() {
     wave: true,
     volume: true,
     cdc: false,
+    waveMap: false,
   });
 
   useEffect(() => {
@@ -116,7 +117,8 @@ export default function App() {
                       ["ema12", "EMA12"],
                       ["ema26", "EMA26"],
                       ["bollinger", "Bollinger"],
-                      ["wave", "Wave"],
+                      ["wave", "Best Wave"],
+                      ["waveMap", "Wave Map (เต็ม)"],
                       ["volume", "Volume"],
                       ["cdc", "CDC Action Zone"],
                     ] as [keyof OverlayToggles, string][]
@@ -138,6 +140,14 @@ export default function App() {
                   <span className="cdc-swatch" style={{ background: "#2962ff" }} /> น้ำเงิน = ขาขึ้นแต่พักตัว (ระวัง)
                   <span className="cdc-swatch" style={{ background: "#ef5350" }} /> แดง = โซนขาย (Sell Zone)
                   <span className="cdc-swatch" style={{ background: "#ffd600" }} /> เหลือง = ขาลงแต่เด้ง (ระวัง)
+                </div>
+              )}
+              {overlays.waveMap && (
+                <div className="cdc-legend">
+                  <span className="cdc-swatch" style={{ background: "#3172f0" }} /> กล่องน้ำเงิน 1-5 = คลื่นส่ง (Impulse)
+                  <span className="cdc-swatch" style={{ background: "#e0455b" }} /> กล่องแดง A-B-C = คลื่นปรับ (Corrective)
+                  <span className="cdc-swatch" style={{ background: "#2ecc71" }} /> เส้นเขียว = ช่วงคลื่นส่ง
+                  <span className="cdc-swatch" style={{ background: "#ff6b81" }} /> เส้นชมพู = ช่วงคลื่นปรับ
                 </div>
               )}
               <div className="chart-container">

@@ -63,6 +63,19 @@ export interface Wave2To3Tracker {
   note: string;
 }
 
+export interface WaveChainPoint {
+  time: number;
+  price: number;
+  index: number;
+  type: "high" | "low";
+  label: WaveLabel | null;
+  phase: "impulse" | "corrective";
+}
+
+export interface WaveChainRun {
+  points: WaveChainPoint[];
+}
+
 export interface WaveAnalysis {
   bestCount: WaveCount | null;
   alternates: WaveCount[];
@@ -72,5 +85,6 @@ export interface WaveAnalysis {
     note: string;
   };
   wave2to3: Wave2To3Tracker;
+  waveChain: WaveChainRun[];
   pivots: Pivot[];
 }

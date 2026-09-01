@@ -8,7 +8,7 @@ import {
   LineSeries,
 } from "lightweight-charts";
 import type { IChartApi, IPriceLine, ISeriesApi, ISeriesMarkersPluginApi, SeriesMarker, Time, UTCTimestamp } from "lightweight-charts";
-import type { AnalyzeResponse } from "../types";
+import type { AnalyzeResponse, WaveChainPoint } from "../types";
 
 export interface OverlayToggles {
   sma20: boolean;
@@ -19,6 +19,7 @@ export interface OverlayToggles {
   wave: boolean;
   volume: boolean;
   cdc: boolean;
+  waveMap: boolean;
 }
 
 interface Props {
@@ -33,6 +34,26 @@ const CDC_COLORS: Record<"green" | "blue" | "red" | "yellow", string> = {
   red: "#ef5350",
   yellow: "#ffd600",
 };
+const CHAIN_IMPULSE_COLOR = "#2ecc71";
+const CHAIN_CORRECTIVE_COLOR = "#ff6b81";
+const CHAIN_NUMBER_COLOR = "#3172f0";
+const CHAIN_LETTER_COLOR = "#e0455b";
+
+function splitChainByPhase(points: WaveChainPoint[]): { phase: WaveChainPoint["phase"]; points: WaveChainPoint[] }[] {
+  const groups: { phase: WaveChainPoint["phase"]; points: WaveChainPoint[] }[] = [];
+  points.forEach((p, i) => {
+    const last = groups[groups.length - 1];
+    if (!last || last.phase !== p.phase) {
+      const seg: WaveChainPoint[] = [];
+      if (i > 0) seg.push(points[i - 1]); // include the boundary point so segments connect visually
+      seg.push(p);
+      groups.push({ phase: p.phase, points: seg });
+    } else {
+      last.points.push(p);
+    }
+  });
+  return groups;
+}
 
 export default function PriceChart({ data, overlays }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -55,6 +76,8 @@ export default function PriceChart({ data, overlays }: Props) {
   } | null>(null);
   const markersRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
   const cdcMarkersRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
+  const chainMarkersRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
+  const chainLinesRef = useRef<ISeriesApi<"Line">[]>([]);
   const wave23LinesRef = useRef<{ breakout: IPriceLine | null; invalidation: IPriceLine | null }>({
     breakout: null,
     invalidation: null,
@@ -132,6 +155,7 @@ export default function PriceChart({ data, overlays }: Props) {
 
     const markers = createSeriesMarkers(candle, []);
     const cdcMarkers = createSeriesMarkers(candle, []);
+    const chainMarkers = createSeriesMarkers(candle, []);
 
     chartRef.current = chart;
     seriesRef.current = {
@@ -152,6 +176,7 @@ export default function PriceChart({ data, overlays }: Props) {
     };
     markersRef.current = markers;
     cdcMarkersRef.current = cdcMarkers;
+    chainMarkersRef.current = chainMarkers;
 
     return () => {
       chart.remove();
@@ -159,6 +184,8 @@ export default function PriceChart({ data, overlays }: Props) {
       seriesRef.current = null;
       markersRef.current = null;
       cdcMarkersRef.current = null;
+      chainMarkersRef.current = null;
+      chainLinesRef.current = [];
       wave23LinesRef.current = { breakout: null, invalidation: null };
     };
   }, []);
@@ -278,6 +305,46 @@ export default function PriceChart({ data, overlays }: Props) {
       cdcMarkersRef.current?.setMarkers([]);
     }
   }, [data, overlays.cdc]);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+
+    for (const line of chainLinesRef.current) chart.removeSeries(line);
+    chainLinesRef.current = [];
+
+    if (!data || !overlays.waveMap) {
+      chainMarkersRef.current?.setMarkers([]);
+      return;
+    }
+
+    const newLines: ISeriesApi<"Line">[] = [];
+    const chainMarkers: SeriesMarker<Time>[] = [];
+
+    for (const run of data.wave.waveChain) {
+      for (const group of splitChainByPhase(run.points)) {
+        const color = group.phase === "impulse" ? CHAIN_IMPULSE_COLOR : CHAIN_CORRECTIVE_COLOR;
+        const line = chart.addSeries(LineSeries, { color, lineWidth: 3, lineStyle: 0, lastValueVisible: false, priceLineVisible: false }, 0);
+        line.setData(group.points.map((p) => ({ time: p.time as UTCTimestamp, value: p.price })));
+        newLines.push(line);
+      }
+
+      for (const p of run.points) {
+        if (!p.label) continue;
+        const isNumber = p.label !== "A" && p.label !== "B" && p.label !== "C";
+        chainMarkers.push({
+          time: p.time as UTCTimestamp,
+          position: p.type === "high" ? "aboveBar" : "belowBar",
+          color: isNumber ? CHAIN_NUMBER_COLOR : CHAIN_LETTER_COLOR,
+          shape: "square",
+          text: p.label,
+        });
+      }
+    }
+
+    chainLinesRef.current = newLines;
+    chainMarkersRef.current?.setMarkers(chainMarkers);
+  }, [data, overlays.waveMap]);
 
   useEffect(() => {
     const s = seriesRef.current;
