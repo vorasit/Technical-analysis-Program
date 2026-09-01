@@ -21,3 +21,8 @@ export function scanWave3(market: Market, interval: Interval, deviation: number)
   const params = new URLSearchParams({ market, interval, deviation: String(deviation) });
   return fetch(`/api/scan/wave3?${params.toString()}`).then((r) => jsonOrThrow<ScanResult[]>(r));
 }
+
+export function searchSymbols(market: Market, q: string): Promise<SymbolInfo[]> {
+  const params = new URLSearchParams({ market, q });
+  return fetch(`/api/search?${params.toString()}`).then((r) => jsonOrThrow<SymbolInfo[]>(r));
+}
