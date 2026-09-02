@@ -63,6 +63,8 @@ export interface Wave2To3Tracker {
   note: string;
   /** Does the current CDC Action Zone agree with this signal's direction? null if no CDC data or no active direction. */
   cdcConfluence: boolean | null;
+  /** Hidden divergence between price and RSI/MACD at wave0->wave2, confirming trend continuation into Wave 3. null if not enough indicator history yet. */
+  divergenceConfluence: boolean | null;
 }
 
 export interface WaveChainPoint {
@@ -122,6 +124,8 @@ export interface BacktestSignal {
   invalidationLevel: number;
   /** Did the CDC Action Zone agree with this signal's direction at entry? null if no CDC data yet (warmup period). */
   cdcAgrees: boolean | null;
+  /** Was there hidden RSI/MACD divergence confirming trend continuation at this signal's wave0->wave2 pivots? null if no indicator data yet (warmup period). */
+  divergenceAgrees: boolean | null;
   returns: Record<number, BacktestReturn | null>;
 }
 
@@ -146,6 +150,9 @@ export interface BacktestResponse {
   aggregate: HorizonStat[];
   aggregateConfluence: HorizonStat[]; // signals only where the CDC Action Zone agreed with the wave's direction
   aggregateNoConfluence: HorizonStat[]; // signals only where it disagreed
+  aggregateDivergence: HorizonStat[]; // signals only where RSI/MACD showed hidden divergence confirming the wave's direction
+  aggregateNoDivergence: HorizonStat[]; // signals only where it didn't
+  aggregateBothConfluence: HorizonStat[]; // signals where both CDC and divergence agreed with the wave's direction
   bySymbol: BacktestSymbolResult[];
   failures: { symbol: string; error: string }[];
 }

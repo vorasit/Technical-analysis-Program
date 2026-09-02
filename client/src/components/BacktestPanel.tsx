@@ -158,6 +158,87 @@ export default function BacktestPanel({ market, interval, deviation, watchlist }
             </tbody>
           </table>
 
+          <div className="scanner-header">
+            <h2 className="backtest-subheading">เทียบผลเมื่อกรองด้วย RSI/MACD Divergence</h2>
+            <p>
+              เช็คว่า ณ จุด Wave 0 กับ Wave 2 ของแต่ละสัญญาณ RSI หรือ MACD มี hidden divergence ยืนยันว่าโมเมนตัมกำลังไปทิศทางเดียวกับคลื่นหรือไม่ (price
+              higher-low/lower-high แต่ indicator กลับต่ำ/สูงกว่าเดิม) — ถ้าฝั่ง "มี Divergence" ให้ผลดีกว่าฝั่ง "ไม่มี" อย่างสม่ำเสมอ แปลว่าใช้กรองสัญญาณคุณภาพสูงขึ้นได้จริง
+            </p>
+          </div>
+          <table className="scanner-table confluence-table">
+            <thead>
+              <tr>
+                <th>ระยะ (แท่ง)</th>
+                <th>ทุกสัญญาณ</th>
+                <th>มี Divergence ยืนยัน</th>
+                <th>ไม่มี Divergence</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.horizons.map((h) => {
+                const all = data.aggregate.find((x) => x.horizon === h);
+                const yes = data.aggregateDivergence.find((x) => x.horizon === h);
+                const no = data.aggregateNoDivergence.find((x) => x.horizon === h);
+                return (
+                  <tr key={h}>
+                    <td className="mono">{h}</td>
+                    {[all, yes, no].map((stat, i) => (
+                      <td key={i} className="mono confluence-cell">
+                        {stat && stat.count > 0 ? (
+                          <>
+                            <span className={stat.winRate >= 50 ? "pos" : "neg"}>{stat.winRate.toFixed(0)}%</span>
+                            <span className={`confluence-return ${stat.avgReturnPct >= 0 ? "pos" : "neg"}`}>{fmtPct(stat.avgReturnPct)}</span>
+                            <span className="confluence-count">n={stat.count}</span>
+                          </>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          <div className="scanner-header">
+            <h2 className="backtest-subheading">เมื่อ CDC และ Divergence ยืนยันตรงกันทั้งคู่</h2>
+            <p>ถ้าต้องรอสัญญาณที่ทั้ง CDC Action Zone และ RSI/MACD Divergence เห็นตรงกัน จะได้จำนวนสัญญาณน้อยลง แต่คุณภาพควรสูงขึ้นถ้าตัวกรองทั้งสองมีค่าจริง</p>
+          </div>
+          <table className="scanner-table confluence-table">
+            <thead>
+              <tr>
+                <th>ระยะ (แท่ง)</th>
+                <th>ทุกสัญญาณ</th>
+                <th>CDC + Divergence ตรงกันทั้งคู่</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.horizons.map((h) => {
+                const all = data.aggregate.find((x) => x.horizon === h);
+                const both = data.aggregateBothConfluence.find((x) => x.horizon === h);
+                return (
+                  <tr key={h}>
+                    <td className="mono">{h}</td>
+                    {[all, both].map((stat, i) => (
+                      <td key={i} className="mono confluence-cell">
+                        {stat && stat.count > 0 ? (
+                          <>
+                            <span className={stat.winRate >= 50 ? "pos" : "neg"}>{stat.winRate.toFixed(0)}%</span>
+                            <span className={`confluence-return ${stat.avgReturnPct >= 0 ? "pos" : "neg"}`}>{fmtPct(stat.avgReturnPct)}</span>
+                            <span className="confluence-count">n={stat.count}</span>
+                          </>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
           <h2 className="backtest-subheading">รายละเอียดต่อสัญลักษณ์ (ทุกสัญญาณ)</h2>
           <table className="scanner-table">
             <thead>

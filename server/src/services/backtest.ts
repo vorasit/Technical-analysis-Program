@@ -1,6 +1,7 @@
 import { BacktestSignal, Candle, HorizonStat, Pivot } from "../types.js";
 import { computeZigzag } from "./elliottWave.js";
 import { cdcActionZone } from "./indicators.js";
+import { buildDivergenceMaps, checkHiddenDivergence } from "./divergence.js";
 
 export const BACKTEST_HORIZONS = [5, 10, 20];
 
@@ -30,6 +31,8 @@ export function findBacktestSignals(candles: Candle[], deviationPct: number): Ba
     const bearZone = zone === "red" || zone === "yellow";
     return isUp ? bullZone : bearZone;
   }
+
+  const divergenceMaps = buildDivergenceMaps(candles);
 
   for (let i = 0; i + 2 < pivots.length; i++) {
     const p0 = pivots[i];
@@ -81,6 +84,7 @@ export function findBacktestSignals(candles: Candle[], deviationPct: number): Ba
       breakoutLevel,
       invalidationLevel,
       cdcAgrees: cdcAgreesAt(candles[entryIdx].time, isUp),
+      divergenceAgrees: checkHiddenDivergence(divergenceMaps, p0.time, p2.time, isUp ? "up" : "down"),
       returns,
     });
   }

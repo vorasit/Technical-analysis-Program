@@ -102,6 +102,7 @@ export interface Wave2To3Tracker {
   confidence: number;
   note: string;
   cdcConfluence: boolean | null;
+  divergenceConfluence: boolean | null;
 }
 
 export interface WaveChainPoint {
@@ -173,6 +174,9 @@ export interface BacktestResponse {
   aggregate: HorizonStat[];
   aggregateConfluence: HorizonStat[];
   aggregateNoConfluence: HorizonStat[];
+  aggregateDivergence: HorizonStat[];
+  aggregateNoDivergence: HorizonStat[];
+  aggregateBothConfluence: HorizonStat[];
   bySymbol: BacktestSymbolResult[];
   failures: { symbol: string; error: string }[];
 }
