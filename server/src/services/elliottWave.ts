@@ -9,8 +9,10 @@ import {
   WaveLabel,
   WavePoint,
   Wave2To3Tracker,
+  PricePoint,
 } from "../types.js";
 import { cdcActionZone } from "./indicators.js";
+import { buildDivergenceMaps, checkHiddenDivergence } from "./divergence.js";
 
 type Six = [Pivot, Pivot, Pivot, Pivot, Pivot, Pivot];
 
@@ -193,6 +195,7 @@ const EMPTY_TRACKER: Wave2To3Tracker = {
   confidence: 0,
   note: "Not enough swing data yet.",
   cdcConfluence: null,
+  divergenceConfluence: null,
 };
 
 function pt(p: Pivot) {
@@ -264,6 +267,7 @@ function detectWave2To3(pivots: Pivot[]): Wave2To3Tracker {
       confidence,
       note: `${isUp ? "Bullish" : "Bearish"} Wave 3 is underway — price is already ${(extensionSoFar * 100).toFixed(0)}% of the Wave 1 length past Wave 2, following a ${(retraceRatio * 100).toFixed(0)}% Wave 2 pullback.`,
       cdcConfluence: null, // filled in by analyzeWaves, which has the candles this needs
+      divergenceConfluence: null,
     };
   }
 
@@ -310,6 +314,7 @@ function detectWave2To3(pivots: Pivot[]): Wave2To3Tracker {
       isUp ? "above" : "below"
     } ${breakoutLevel.toFixed(4)} to confirm Wave 3 (currently ${progressPct}% of the way there).`,
     cdcConfluence: null, // filled in by analyzeWaves, which has the candles this needs
+    divergenceConfluence: null,
   };
 }
 
@@ -409,11 +414,27 @@ function checkCdcConfluence(candles: Candle[], direction: Wave2To3Tracker["direc
   return direction === "up" ? bullZone : bearZone;
 }
 
+/**
+ * Does RSI/MACD show hidden divergence at this tracker's wave0->wave2 pivots,
+ * confirming the pullback is likely to resolve back in the wave's direction?
+ * See divergence.ts for why "hidden" (not "regular") divergence is the
+ * correct check for a Wave 2 pullback.
+ */
+function checkDivergenceConfluence(candles: Candle[], wave0: PricePoint | null, wave2: PricePoint | null, direction: Wave2To3Tracker["direction"]): boolean | null {
+  if (!direction || !wave0 || !wave2) return null;
+  const maps = buildDivergenceMaps(candles);
+  return checkHiddenDivergence(maps, wave0.time, wave2.time, direction);
+}
+
 export function analyzeWaves(candles: Candle[], deviationPct = 3): WaveAnalysis {
   const pivots = computeZigzag(candles, deviationPct);
   const candidates = findImpulseCandidates(pivots);
   const wave2to3Raw = detectWave2To3(pivots);
-  const wave2to3: Wave2To3Tracker = { ...wave2to3Raw, cdcConfluence: checkCdcConfluence(candles, wave2to3Raw.direction) };
+  const wave2to3: Wave2To3Tracker = {
+    ...wave2to3Raw,
+    cdcConfluence: checkCdcConfluence(candles, wave2to3Raw.direction),
+    divergenceConfluence: checkDivergenceConfluence(candles, wave2to3Raw.wave0, wave2to3Raw.wave2, wave2to3Raw.direction),
+  };
   const waveChain = buildWaveChain(pivots);
   const fibonacci = computeFibonacci(pivots);
 

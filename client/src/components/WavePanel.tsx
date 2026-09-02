@@ -43,6 +43,15 @@ function Wave2To3Card({ tracker, symbol }: { tracker: Wave2To3Tracker; symbol: s
         </div>
       )}
 
+      {tracker.phase !== "none" && tracker.divergenceConfluence !== null && (
+        <div
+          className={`badge wave23-confluence ${tracker.divergenceConfluence ? "badge-confluence" : "badge-no-confluence"}`}
+          title="Hidden divergence: RSI/MACD ที่จุด Wave 0 กับ Wave 2 ชี้ว่าโมเมนตัมกำลังสะสมไปในทิศทางเดียวกับคลื่น ยืนยันว่า Wave 2 น่าจะเป็นแค่การพักฐาน ไม่ใช่การกลับตัว (ดูแท็บ Backtest)"
+        >
+          {tracker.divergenceConfluence ? "✓ RSI/MACD Divergence ยืนยัน" : "✗ ไม่มี Divergence ยืนยัน"}
+        </div>
+      )}
+
       {tracker.phase !== "none" && tracker.breakoutLevel !== null && (
         <>
           <div className="wave23-progress-track">

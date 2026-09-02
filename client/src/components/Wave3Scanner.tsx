@@ -87,6 +87,10 @@ export default function Wave3Scanner({ market, interval, deviation, onOpenSymbol
             <div className="scanner-legend-item">
               <span className="badge badge-confluence">✓ CDC ตรงกัน</span> ผลทดสอบย้อนหลังพบว่าให้ผลตอบแทนเฉลี่ยดีกว่าอย่างชัดเจน (ดูแท็บ Backtest)
             </div>
+            <div className="scanner-legend-item">
+              <span className="badge badge-confluence">✓ Divergence ยืนยัน</span> RSI/MACD มี hidden divergence ที่จุด Wave 0/Wave 2 ยืนยันโมเมนตัมไปทิศทางเดียวกับคลื่น
+              (ดูแท็บ Backtest)
+            </div>
           </div>
           <table className="scanner-table">
             <thead>
@@ -120,6 +124,14 @@ export default function Wave3Scanner({ market, interval, deviation, onOpenSymbol
                         title="ผลทดสอบย้อนหลังพบว่าสัญญาณที่ CDC Action Zone เห็นตรงกันให้ผลตอบแทนเฉลี่ยดีกว่าอย่างชัดเจน (ดูแท็บ Backtest)"
                       >
                         {r.wave2to3.cdcConfluence ? "✓ CDC ตรงกัน" : "✗ CDC ไม่ตรงกัน"}
+                      </span>
+                    )}
+                    {r.wave2to3.phase !== "none" && r.wave2to3.divergenceConfluence !== null && (
+                      <span
+                        className={`badge ${r.wave2to3.divergenceConfluence ? "badge-confluence" : "badge-no-confluence"}`}
+                        title="Hidden divergence: RSI/MACD ที่จุด Wave 0 กับ Wave 2 ยืนยันโมเมนตัมไปทิศทางเดียวกับคลื่น (ดูแท็บ Backtest)"
+                      >
+                        {r.wave2to3.divergenceConfluence ? "✓ Divergence ยืนยัน" : "✗ ไม่มี Divergence"}
                       </span>
                     )}
                     {r.wave2to3.phase !== "none" && (
