@@ -40,4 +40,18 @@ export const SYMBOLS: Record<Market, SymbolInfo[]> = {
     { symbol: "DOTUSDT", name: "Polkadot", market: "crypto" },
     { symbol: "SUIUSDT", name: "Sui", market: "crypto" },
   ],
+  forex: [
+    { symbol: "EURUSD=X", name: "Euro / US Dollar", market: "forex" },
+    { symbol: "GBPUSD=X", name: "British Pound / US Dollar", market: "forex" },
+    { symbol: "USDJPY=X", name: "US Dollar / Japanese Yen", market: "forex" },
+    { symbol: "USDCHF=X", name: "US Dollar / Swiss Franc", market: "forex" },
+    { symbol: "AUDUSD=X", name: "Australian Dollar / US Dollar", market: "forex" },
+    { symbol: "USDCAD=X", name: "US Dollar / Canadian Dollar", market: "forex" },
+    { symbol: "NZDUSD=X", name: "New Zealand Dollar / US Dollar", market: "forex" },
+    { symbol: "EURJPY=X", name: "Euro / Japanese Yen", market: "forex" },
+    { symbol: "GBPJPY=X", name: "British Pound / Japanese Yen", market: "forex" },
+    { symbol: "EURGBP=X", name: "Euro / British Pound", market: "forex" },
+    { symbol: "USDTHB=X", name: "US Dollar / Thai Baht", market: "forex" },
+    { symbol: "USDCNH=X", name: "US Dollar / Chinese Yuan", market: "forex" },
+  ],
 };

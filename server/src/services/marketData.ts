@@ -10,6 +10,8 @@ export async function getCandles(market: Market, symbol: string, interval: Inter
   const cached = cache.get<Candle[]>(key);
   if (cached) return cached;
 
+  // forex, stock, and commodity symbols all resolve through Yahoo Finance;
+  // only crypto pairs go through the dedicated Binance client.
   const candles =
     market === "crypto" ? await fetchBinanceCandles(symbol, interval, limit) : await fetchYahooCandles(symbol, interval);
 
