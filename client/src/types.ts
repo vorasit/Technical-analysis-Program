@@ -1,4 +1,4 @@
-export type Market = "stock" | "commodity" | "crypto";
+export type Market = "stock" | "commodity" | "crypto" | "forex";
 export type Interval = "1h" | "1d" | "1w";
 
 export interface Candle {

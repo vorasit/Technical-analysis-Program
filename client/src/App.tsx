@@ -16,6 +16,7 @@ const DEFAULT_SYMBOL: Record<Market, SymbolInfo> = {
   stock: { symbol: "AAPL", name: "Apple Inc.", market: "stock" },
   commodity: { symbol: "GC=F", name: "Gold Futures", market: "commodity" },
   crypto: { symbol: "BTCUSDT", name: "Bitcoin", market: "crypto" },
+  forex: { symbol: "EURUSD=X", name: "Euro / US Dollar", market: "forex" },
 };
 
 const RECENT_KEY_PREFIX = "ta-recent-symbols:";

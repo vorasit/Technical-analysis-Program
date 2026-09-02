@@ -16,6 +16,7 @@ interface YahooSearchResponse {
 
 const STOCK_QUOTE_TYPES = new Set(["EQUITY", "ETF"]);
 const COMMODITY_QUOTE_TYPES = new Set(["FUTURE"]);
+const FOREX_QUOTE_TYPES = new Set(["CURRENCY"]);
 
 async function searchYahoo(query: string, quoteTypes: Set<string>, market: Market): Promise<SymbolInfo[]> {
   const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=15&newsCount=0`;
@@ -110,10 +111,14 @@ export async function searchSymbols(market: Market, query: string): Promise<Symb
   const cached = cache.get<SymbolInfo[]>(cacheKey);
   if (cached) return cached;
 
+  const YAHOO_QUOTE_TYPES: Record<"stock" | "commodity" | "forex", Set<string>> = {
+    stock: STOCK_QUOTE_TYPES,
+    commodity: COMMODITY_QUOTE_TYPES,
+    forex: FOREX_QUOTE_TYPES,
+  };
+
   const results =
-    market === "crypto"
-      ? await searchBinance(trimmed)
-      : await searchYahoo(trimmed, market === "stock" ? STOCK_QUOTE_TYPES : COMMODITY_QUOTE_TYPES, market);
+    market === "crypto" ? await searchBinance(trimmed) : await searchYahoo(trimmed, YAHOO_QUOTE_TYPES[market], market);
 
   cache.set(cacheKey, results, 120);
   return results;

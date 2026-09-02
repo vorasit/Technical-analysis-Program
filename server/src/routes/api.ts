@@ -11,7 +11,8 @@ import { BacktestSignal, BacktestSymbolResult } from "../types.js";
 
 const router = Router();
 
-const VALID_MARKETS: Market[] = ["stock", "commodity", "crypto"];
+const VALID_MARKETS: Market[] = ["stock", "commodity", "crypto", "forex"];
+const INVALID_MARKET_MSG = "Invalid or missing market. Use stock, commodity, crypto, or forex.";
 const VALID_INTERVALS: Interval[] = ["1h", "1d", "1w"];
 
 function parseMarket(v: unknown): Market | null {
@@ -25,7 +26,7 @@ function parseInterval(v: unknown): Interval | null {
 router.get("/symbols", (req, res) => {
   const market = parseMarket(req.query.market);
   if (!market) {
-    return res.status(400).json({ error: "Invalid or missing market. Use stock, commodity, or crypto." });
+    return res.status(400).json({ error: INVALID_MARKET_MSG });
   }
   res.json(SYMBOLS[market]);
 });
@@ -35,7 +36,7 @@ router.get("/search", async (req, res) => {
   const q = typeof req.query.q === "string" ? req.query.q : "";
 
   if (!market) {
-    return res.status(400).json({ error: "Invalid or missing market. Use stock, commodity, or crypto." });
+    return res.status(400).json({ error: INVALID_MARKET_MSG });
   }
 
   try {
@@ -131,7 +132,7 @@ router.get("/backtest", async (req, res) => {
   const singleSymbol = typeof req.query.symbol === "string" ? req.query.symbol : null;
 
   if (!market) {
-    return res.status(400).json({ error: "Invalid or missing market. Use stock, commodity, or crypto." });
+    return res.status(400).json({ error: INVALID_MARKET_MSG });
   }
 
   const resolvedMarket: Market = market;
@@ -185,7 +186,7 @@ router.get("/scan/wave3", async (req, res) => {
   const deviation = req.query.deviation ? Number(req.query.deviation) : 3;
 
   if (!market) {
-    return res.status(400).json({ error: "Invalid or missing market. Use stock, commodity, or crypto." });
+    return res.status(400).json({ error: INVALID_MARKET_MSG });
   }
 
   const resolvedMarket: Market = market;
