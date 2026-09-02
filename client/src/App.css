@@ -771,6 +771,21 @@
   color: #e3b341;
 }
 
+.badge-confluence {
+  background: #2ea04333;
+  color: #3fb950;
+}
+
+.badge-no-confluence {
+  background: #30363d;
+  color: #6e7681;
+}
+
+.wave23-confluence {
+  display: inline-block;
+  margin: 0 0 8px;
+}
+
 .mini-progress-track {
   position: relative;
   width: 90px;

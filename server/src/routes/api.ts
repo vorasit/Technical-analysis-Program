@@ -215,6 +215,11 @@ router.get("/scan/wave3", async (req, res) => {
   scanned.sort((a, b) => {
     const rankDiff = phaseRank[b.wave2to3.phase] - phaseRank[a.wave2to3.phase];
     if (rankDiff !== 0) return rankDiff;
+    // Backtesting showed CDC Action Zone agreement is a real quality filter
+    // for this signal (see /api/backtest's confluence breakdown) — rank
+    // confluent signals above non-confluent ones before falling back to confidence.
+    const confluenceDiff = (b.wave2to3.cdcConfluence === true ? 1 : 0) - (a.wave2to3.cdcConfluence === true ? 1 : 0);
+    if (confluenceDiff !== 0) return confluenceDiff;
     return b.wave2to3.confidence - a.wave2to3.confidence;
   });
 

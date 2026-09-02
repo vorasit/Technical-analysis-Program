@@ -101,6 +101,7 @@ export interface Wave2To3Tracker {
   retraceRatio: number | null;
   confidence: number;
   note: string;
+  cdcConfluence: boolean | null;
 }
 
 export interface WaveChainPoint {

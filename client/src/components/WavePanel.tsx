@@ -34,6 +34,15 @@ function Wave2To3Card({ tracker, symbol }: { tracker: Wave2To3Tracker; symbol: s
       </div>
       <div className="wave23-phase">{PHASE_LABEL[tracker.phase]}</div>
 
+      {tracker.phase !== "none" && tracker.cdcConfluence !== null && (
+        <div
+          className={`badge wave23-confluence ${tracker.cdcConfluence ? "badge-confluence" : "badge-no-confluence"}`}
+          title="ผลทดสอบย้อนหลังพบว่าสัญญาณที่ CDC Action Zone เห็นตรงกันให้ผลตอบแทนเฉลี่ยดีกว่าอย่างชัดเจน (ดูแท็บ Backtest)"
+        >
+          {tracker.cdcConfluence ? "✓ CDC Action Zone เห็นตรงกัน" : "✗ CDC Action Zone ไม่ตรงกัน"}
+        </div>
+      )}
+
       {tracker.phase !== "none" && tracker.breakoutLevel !== null && (
         <>
           <div className="wave23-progress-track">

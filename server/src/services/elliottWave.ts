@@ -10,6 +10,7 @@ import {
   WavePoint,
   Wave2To3Tracker,
 } from "../types.js";
+import { cdcActionZone } from "./indicators.js";
 
 type Six = [Pivot, Pivot, Pivot, Pivot, Pivot, Pivot];
 
@@ -191,6 +192,7 @@ const EMPTY_TRACKER: Wave2To3Tracker = {
   retraceRatio: null,
   confidence: 0,
   note: "Not enough swing data yet.",
+  cdcConfluence: null,
 };
 
 function pt(p: Pivot) {
@@ -261,6 +263,7 @@ function detectWave2To3(pivots: Pivot[]): Wave2To3Tracker {
       retraceRatio,
       confidence,
       note: `${isUp ? "Bullish" : "Bearish"} Wave 3 is underway — price is already ${(extensionSoFar * 100).toFixed(0)}% of the Wave 1 length past Wave 2, following a ${(retraceRatio * 100).toFixed(0)}% Wave 2 pullback.`,
+      cdcConfluence: null, // filled in by analyzeWaves, which has the candles this needs
     };
   }
 
@@ -306,6 +309,7 @@ function detectWave2To3(pivots: Pivot[]): Wave2To3Tracker {
     note: `Wave 2 pullback of ${(retraceRatio * 100).toFixed(0)}% looks complete — price needs to break ${
       isUp ? "above" : "below"
     } ${breakoutLevel.toFixed(4)} to confirm Wave 3 (currently ${progressPct}% of the way there).`,
+    cdcConfluence: null, // filled in by analyzeWaves, which has the candles this needs
   };
 }
 
@@ -390,10 +394,26 @@ function computeFibonacci(pivots: Pivot[]): FibAnalysis | null {
   return { high, low, direction, startTime: start.time, endTime: end.time, levels };
 }
 
+/**
+ * Does the current CDC Action Zone agree with the tracker's signal direction?
+ * Backtesting showed this is a real, meaningful filter (see /api/backtest's
+ * confluence breakdown) — this is what surfaces it on the live signal too.
+ */
+function checkCdcConfluence(candles: Candle[], direction: Wave2To3Tracker["direction"]): boolean | null {
+  if (!direction) return null;
+  const cdc = cdcActionZone(candles);
+  const latest = cdc[cdc.length - 1];
+  if (!latest) return null;
+  const bullZone = latest.zone === "green" || latest.zone === "blue";
+  const bearZone = latest.zone === "red" || latest.zone === "yellow";
+  return direction === "up" ? bullZone : bearZone;
+}
+
 export function analyzeWaves(candles: Candle[], deviationPct = 3): WaveAnalysis {
   const pivots = computeZigzag(candles, deviationPct);
   const candidates = findImpulseCandidates(pivots);
-  const wave2to3 = detectWave2To3(pivots);
+  const wave2to3Raw = detectWave2To3(pivots);
+  const wave2to3: Wave2To3Tracker = { ...wave2to3Raw, cdcConfluence: checkCdcConfluence(candles, wave2to3Raw.direction) };
   const waveChain = buildWaveChain(pivots);
   const fibonacci = computeFibonacci(pivots);
 
