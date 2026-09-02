@@ -102,6 +102,9 @@ export default function Wave3Scanner({ market, interval, deviation, onOpenSymbol
                 <th title="คุณภาพของรูปแบบคลื่นตามอัตราส่วน Fibonacci และกฎ Elliott Wave — ไม่เกี่ยวกับระยะทางราคา">
                   ความมั่นใจของรูปแบบคลื่น
                 </th>
+                <th title="Risk:Reward ที่เป้าหมาย Fibonacci extension 1.618 เท่าของ Wave 1 (จุดเข้า = แนวทะลุ, stop-loss = ใต้ Wave 2)">
+                  R:R @1.618x
+                </th>
                 <th></th>
               </tr>
             </thead>
@@ -148,6 +151,12 @@ export default function Wave3Scanner({ market, interval, deviation, onOpenSymbol
                     )}
                   </td>
                   <td className="mono">{r.wave2to3.phase !== "none" ? `${r.wave2to3.confidence}%` : "-"}</td>
+                  <td className="mono">
+                    {(() => {
+                      const target = r.wave2to3.riskReward?.targets.find((t) => t.ratio === 1.618);
+                      return target ? `${target.riskRewardRatio.toFixed(2)}:1` : "-";
+                    })()}
+                  </td>
                   <td>
                     <button className="link-btn" onClick={() => onOpenSymbol(r.symbol)}>
                       ดูกราฟ

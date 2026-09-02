@@ -65,6 +65,22 @@ export interface Wave2To3Tracker {
   cdcConfluence: boolean | null;
   /** Hidden divergence between price and RSI/MACD at wave0->wave2, confirming trend continuation into Wave 3. null if not enough indicator history yet. */
   divergenceConfluence: boolean | null;
+  /** Entry/stop/target plan for a Wave 3 trade off this setup. null until wave0/wave1/wave2/breakoutLevel are all known. */
+  riskReward: RiskRewardPlan | null;
+}
+
+export interface RiskRewardTarget {
+  ratio: number; // multiple of the Wave 1 length projected from Wave 2 (Fibonacci extension)
+  price: number;
+  rewardPct: number; // % move from entry to this target
+  riskRewardRatio: number; // reward / risk for this target
+}
+
+export interface RiskRewardPlan {
+  entryPrice: number; // the Wave 3 breakout level
+  stopLoss: number; // just beyond the Wave 2 pivot extreme
+  riskPct: number; // % distance from entry to stop
+  targets: RiskRewardTarget[];
 }
 
 export interface WaveChainPoint {

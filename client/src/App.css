@@ -464,6 +464,39 @@
   color: #8b949e;
 }
 
+.wave23-riskreward {
+  border-top: 1px solid #30363d;
+  margin: 10px 0;
+  padding-top: 8px;
+}
+
+.wave23-riskreward-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: #c9d1d9;
+  margin-bottom: 6px;
+}
+
+.rr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.rr-table th {
+  text-align: left;
+  color: #8b949e;
+  font-weight: 500;
+  padding: 3px 6px 3px 0;
+  border-bottom: 1px solid #30363d;
+}
+
+.rr-table td {
+  padding: 3px 6px 3px 0;
+  color: #c9d1d9;
+}
+
 .confidence-badge {
   position: absolute;
   top: 12px;

@@ -78,7 +78,45 @@ function Wave2To3Card({ tracker, symbol }: { tracker: Wave2To3Tracker; symbol: s
         </>
       )}
 
+      {tracker.riskReward && <RiskRewardTable plan={tracker.riskReward} />}
+
       <p>{tracker.note}</p>
+    </div>
+  );
+}
+
+function RiskRewardTable({ plan }: { plan: NonNullable<Wave2To3Tracker["riskReward"]> }) {
+  return (
+    <div className="wave23-riskreward">
+      <div className="wave23-riskreward-header">แผน Risk/Reward (อ้างอิงจุดทะลุแนวเป็นจุดเข้า)</div>
+      <div className="wave23-levels">
+        <span>
+          จุดเข้า: <strong>{fmtPrice(plan.entryPrice)}</strong>
+        </span>
+        <span>
+          Stop-loss (ใต้ Wave 2): <strong>{fmtPrice(plan.stopLoss)}</strong> <small>(ความเสี่ยง {plan.riskPct.toFixed(1)}%)</small>
+        </span>
+      </div>
+      <table className="rr-table">
+        <thead>
+          <tr>
+            <th>เป้าหมาย (Fib ext. ของ Wave 1)</th>
+            <th>ราคา</th>
+            <th>ผลตอบแทน</th>
+            <th>R:R</th>
+          </tr>
+        </thead>
+        <tbody>
+          {plan.targets.map((t) => (
+            <tr key={t.ratio}>
+              <td className="mono">{t.ratio}x</td>
+              <td className="mono">{fmtPrice(t.price)}</td>
+              <td className="mono pos">+{t.rewardPct.toFixed(1)}%</td>
+              <td className="mono">{t.riskRewardRatio.toFixed(2)}:1</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

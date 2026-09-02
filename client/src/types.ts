@@ -103,6 +103,21 @@ export interface Wave2To3Tracker {
   note: string;
   cdcConfluence: boolean | null;
   divergenceConfluence: boolean | null;
+  riskReward: RiskRewardPlan | null;
+}
+
+export interface RiskRewardTarget {
+  ratio: number;
+  price: number;
+  rewardPct: number;
+  riskRewardRatio: number;
+}
+
+export interface RiskRewardPlan {
+  entryPrice: number;
+  stopLoss: number;
+  riskPct: number;
+  targets: RiskRewardTarget[];
 }
 
 export interface WaveChainPoint {
