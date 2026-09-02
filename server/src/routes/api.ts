@@ -82,6 +82,46 @@ router.get("/analyze", async (req, res) => {
   }
 });
 
+function parseCustomSymbols(raw: unknown, market: Market): { symbol: string; name: string; market: Market }[] | null {
+  if (typeof raw !== "string" || !raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return null;
+    const list = parsed
+      .filter((item): item is { symbol: string; name?: string } => typeof item === "object" && item !== null && typeof (item as { symbol?: unknown }).symbol === "string")
+      .map((item) => ({ symbol: item.symbol, name: item.name ?? item.symbol, market }));
+    return list.length > 0 ? list : null;
+  } catch {
+    return null;
+  }
+}
+
+router.get("/mtf", async (req, res) => {
+  const market = parseMarket(req.query.market);
+  const symbol = typeof req.query.symbol === "string" ? req.query.symbol : null;
+  const deviation = req.query.deviation ? Number(req.query.deviation) : 3;
+
+  if (!market || !symbol) {
+    return res.status(400).json({ error: "market and symbol are required." });
+  }
+
+  const intervals: Interval[] = ["1h", "1d", "1w"];
+  const results = await Promise.all(
+    intervals.map(async (interval) => {
+      try {
+        const candles = await getCandles(market, symbol, interval);
+        if (candles.length < 20) return { interval, error: "Not enough data." };
+        const wave = analyzeWaves(candles, deviation);
+        return { interval, wave2to3: wave.wave2to3, lastPrice: candles[candles.length - 1].close };
+      } catch (err) {
+        return { interval, error: err instanceof Error ? err.message : "Failed to fetch data." };
+      }
+    })
+  );
+
+  res.json(results);
+});
+
 router.get("/scan/wave3", async (req, res) => {
   const market = parseMarket(req.query.market);
   const interval = parseInterval(req.query.interval) ?? "1d";
@@ -92,7 +132,7 @@ router.get("/scan/wave3", async (req, res) => {
   }
 
   const resolvedMarket: Market = market;
-  const symbols = SYMBOLS[resolvedMarket];
+  const symbols = parseCustomSymbols(req.query.symbols, resolvedMarket) ?? SYMBOLS[resolvedMarket];
 
   async function scanOne(s: (typeof symbols)[number]) {
     const candles = await getCandles(resolvedMarket, s.symbol, interval);

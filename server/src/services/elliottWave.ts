@@ -1,4 +1,15 @@
-import { Candle, Pivot, WaveAnalysis, WaveChainPoint, WaveChainRun, WaveCount, WaveLabel, WavePoint, Wave2To3Tracker } from "../types.js";
+import {
+  Candle,
+  FibAnalysis,
+  Pivot,
+  WaveAnalysis,
+  WaveChainPoint,
+  WaveChainRun,
+  WaveCount,
+  WaveLabel,
+  WavePoint,
+  Wave2To3Tracker,
+} from "../types.js";
 
 type Six = [Pivot, Pivot, Pivot, Pivot, Pivot, Pivot];
 
@@ -353,11 +364,38 @@ export function buildWaveChain(pivots: Pivot[]): WaveChainRun[] {
   return runs;
 }
 
+const FIB_RATIOS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1, 1.272, 1.618];
+
+/**
+ * Fibonacci retracement (and short extension) levels for the most recent
+ * completed swing — the last two confirmed pivots. Independent of any wave
+ * count, so it's available even when no valid Elliott pattern is found.
+ */
+function computeFibonacci(pivots: Pivot[]): FibAnalysis | null {
+  const confirmed = pivots.slice(0, -1);
+  if (confirmed.length < 2) return null;
+
+  const [start, end] = confirmed.slice(-2);
+  const direction: "up" | "down" = end.price > start.price ? "up" : "down";
+  const high = direction === "up" ? end.price : start.price;
+  const low = direction === "up" ? start.price : end.price;
+  const range = high - low;
+  if (range <= 0) return null;
+
+  const levels = FIB_RATIOS.map((ratio) => ({
+    ratio,
+    price: direction === "up" ? high - range * ratio : low + range * ratio,
+  }));
+
+  return { high, low, direction, startTime: start.time, endTime: end.time, levels };
+}
+
 export function analyzeWaves(candles: Candle[], deviationPct = 3): WaveAnalysis {
   const pivots = computeZigzag(candles, deviationPct);
   const candidates = findImpulseCandidates(pivots);
   const wave2to3 = detectWave2To3(pivots);
   const waveChain = buildWaveChain(pivots);
+  const fibonacci = computeFibonacci(pivots);
 
   return {
     bestCount: candidates[0] ?? null,
@@ -369,6 +407,7 @@ export function analyzeWaves(candles: Candle[], deviationPct = 3): WaveAnalysis 
     },
     wave2to3,
     waveChain,
+    fibonacci,
     pivots,
   };
 }

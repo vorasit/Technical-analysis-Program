@@ -116,6 +116,20 @@ export interface WaveChainRun {
   points: WaveChainPoint[];
 }
 
+export interface FibLevel {
+  ratio: number;
+  price: number;
+}
+
+export interface FibAnalysis {
+  high: number;
+  low: number;
+  direction: "up" | "down";
+  startTime: number;
+  endTime: number;
+  levels: FibLevel[];
+}
+
 export interface WaveAnalysis {
   bestCount: WaveCount | null;
   alternates: WaveCount[];
@@ -126,7 +140,15 @@ export interface WaveAnalysis {
   };
   wave2to3: Wave2To3Tracker;
   waveChain: WaveChainRun[];
+  fibonacci: FibAnalysis | null;
   pivots: Pivot[];
+}
+
+export interface MtfEntry {
+  interval: Interval;
+  wave2to3?: Wave2To3Tracker;
+  lastPrice?: number;
+  error?: string;
 }
 
 export interface AnalyzeResponse {

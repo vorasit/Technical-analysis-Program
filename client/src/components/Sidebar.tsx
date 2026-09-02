@@ -18,21 +18,59 @@ interface Props {
   selectedSymbol: string;
   onSelectSymbol: (s: SymbolInfo) => void;
   recents: SymbolInfo[];
+  watchlist: SymbolInfo[];
+  onToggleWatchlist: (s: SymbolInfo) => void;
 }
 
-function SymbolButton({ s, active, onClick }: { s: SymbolInfo; active: boolean; onClick: () => void }) {
+function isSameSymbol(a: string, b: string): boolean {
+  return a.toUpperCase() === b.toUpperCase();
+}
+
+function SymbolButton({
+  s,
+  active,
+  watched,
+  onClick,
+  onToggleWatch,
+}: {
+  s: SymbolInfo;
+  active: boolean;
+  watched: boolean;
+  onClick: () => void;
+  onToggleWatch: () => void;
+}) {
   return (
-    <button className={`symbol-item ${active ? "active" : ""}`} onClick={onClick}>
-      <SymbolLogo symbol={s.symbol} market={s.market} size={22} />
-      <span className="symbol-text">
-        <span className="symbol-code">{s.symbol}</span>
-        <span className="symbol-name">{s.name}</span>
-      </span>
-    </button>
+    <div className={`symbol-item-row ${active ? "active" : ""}`}>
+      <button className="symbol-item" onClick={onClick}>
+        <SymbolLogo symbol={s.symbol} market={s.market} size={22} />
+        <span className="symbol-text">
+          <span className="symbol-code">{s.symbol}</span>
+          <span className="symbol-name">{s.name}</span>
+        </span>
+      </button>
+      <button
+        className={`watch-toggle ${watched ? "active" : ""}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleWatch();
+        }}
+        title="เพิ่ม/นำออกจาก Watchlist"
+      >
+        {watched ? "★" : "☆"}
+      </button>
+    </div>
   );
 }
 
-export default function Sidebar({ market, onMarketChange, selectedSymbol, onSelectSymbol, recents }: Props) {
+export default function Sidebar({
+  market,
+  onMarketChange,
+  selectedSymbol,
+  onSelectSymbol,
+  recents,
+  watchlist,
+  onToggleWatchlist,
+}: Props) {
   const [symbols, setSymbols] = useState<SymbolInfo[]>([]);
   const [query, setQuery] = useState("");
   const [remoteResults, setRemoteResults] = useState<SymbolInfo[]>([]);
@@ -83,17 +121,18 @@ export default function Sidebar({ market, onMarketChange, selectedSymbol, onSele
 
   // Only show recents that aren't already visible in the preset list, to avoid duplicates.
   const extraRecents = useMemo(
-    () => recents.filter((r) => !symbols.some((s) => s.symbol.toUpperCase() === r.symbol.toUpperCase())),
+    () => recents.filter((r) => !symbols.some((s) => isSameSymbol(s.symbol, r.symbol))),
     [recents, symbols]
   );
 
   // Remote results that aren't already shown in the local preset matches.
   const extraRemoteResults = useMemo(
-    () => remoteResults.filter((r) => !filtered.some((s) => s.symbol.toUpperCase() === r.symbol.toUpperCase())),
+    () => remoteResults.filter((r) => !filtered.some((s) => isSameSymbol(s.symbol, r.symbol))),
     [remoteResults, filtered]
   );
 
   const isSearchMode = query.trim().length >= MIN_QUERY_LENGTH;
+  const isWatched = (symbol: string) => watchlist.some((w) => isSameSymbol(w.symbol, symbol));
 
   function handleSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key !== "Enter") return;
@@ -101,9 +140,9 @@ export default function Sidebar({ market, onMarketChange, selectedSymbol, onSele
     if (!trimmed) return;
     const upper = trimmed.toUpperCase();
     const known =
-      symbols.find((s) => s.symbol.toUpperCase() === upper) ??
-      recents.find((s) => s.symbol.toUpperCase() === upper) ??
-      remoteResults.find((s) => s.symbol.toUpperCase() === upper);
+      symbols.find((s) => isSameSymbol(s.symbol, upper)) ??
+      recents.find((s) => isSameSymbol(s.symbol, upper)) ??
+      remoteResults.find((s) => isSameSymbol(s.symbol, upper));
     onSelectSymbol(known ?? { symbol: upper, name: upper, market });
     setQuery("");
   }
@@ -130,17 +169,46 @@ export default function Sidebar({ market, onMarketChange, selectedSymbol, onSele
         onKeyDown={handleSearchKeyDown}
       />
       <div className="symbol-list">
+        {!isSearchMode && watchlist.length > 0 && (
+          <>
+            <div className="symbol-list-heading">★ Watchlist ของฉัน</div>
+            {watchlist.map((s) => (
+              <SymbolButton
+                key={`watch-${s.symbol}`}
+                s={s}
+                active={s.symbol === selectedSymbol}
+                watched
+                onClick={() => handleSelect(s)}
+                onToggleWatch={() => onToggleWatchlist(s)}
+              />
+            ))}
+          </>
+        )}
         {!isSearchMode && extraRecents.length > 0 && (
           <>
             <div className="symbol-list-heading">ล่าสุด</div>
             {extraRecents.map((s) => (
-              <SymbolButton key={`recent-${s.symbol}`} s={s} active={s.symbol === selectedSymbol} onClick={() => handleSelect(s)} />
+              <SymbolButton
+                key={`recent-${s.symbol}`}
+                s={s}
+                active={s.symbol === selectedSymbol}
+                watched={isWatched(s.symbol)}
+                onClick={() => handleSelect(s)}
+                onToggleWatch={() => onToggleWatchlist(s)}
+              />
             ))}
-            <div className="symbol-list-heading">รายการ</div>
           </>
         )}
+        {!isSearchMode && <div className="symbol-list-heading">รายการ</div>}
         {filtered.map((s) => (
-          <SymbolButton key={s.symbol} s={s} active={s.symbol === selectedSymbol} onClick={() => handleSelect(s)} />
+          <SymbolButton
+            key={s.symbol}
+            s={s}
+            active={s.symbol === selectedSymbol}
+            watched={isWatched(s.symbol)}
+            onClick={() => handleSelect(s)}
+            onToggleWatch={() => onToggleWatchlist(s)}
+          />
         ))}
         {isSearchMode && (
           <>
@@ -148,14 +216,21 @@ export default function Sidebar({ market, onMarketChange, selectedSymbol, onSele
               ผลการค้นหาทั่วโลก{searching ? " — กำลังค้นหา..." : ""}
             </div>
             {extraRemoteResults.map((s) => (
-              <SymbolButton key={`remote-${s.symbol}`} s={s} active={s.symbol === selectedSymbol} onClick={() => handleSelect(s)} />
+              <SymbolButton
+                key={`remote-${s.symbol}`}
+                s={s}
+                active={s.symbol === selectedSymbol}
+                watched={isWatched(s.symbol)}
+                onClick={() => handleSelect(s)}
+                onToggleWatch={() => onToggleWatchlist(s)}
+              />
             ))}
             {!searching && extraRemoteResults.length === 0 && (
               <div className="empty-state">ไม่พบผลลัพธ์เพิ่มเติม — กด Enter เพื่อค้นหาด้วยสัญลักษณ์ตรง ๆ</div>
             )}
           </>
         )}
-        {!isSearchMode && filtered.length === 0 && extraRecents.length === 0 && (
+        {!isSearchMode && filtered.length === 0 && extraRecents.length === 0 && watchlist.length === 0 && (
           <div className="empty-state">ไม่พบสัญลักษณ์ — พิมพ์ชื่อหรือสัญลักษณ์เพื่อค้นหา</div>
         )}
       </div>

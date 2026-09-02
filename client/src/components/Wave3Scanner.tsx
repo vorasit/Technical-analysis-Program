@@ -2,25 +2,35 @@ import { useEffect, useState } from "react";
 import { scanWave3 } from "../api";
 import { formatPrice } from "../format";
 import SymbolLogo from "./SymbolLogo";
-import type { Interval, Market, ScanResult } from "../types";
+import type { Interval, Market, ScanResult, SymbolInfo } from "../types";
+
+type Source = "preset" | "watchlist";
 
 interface Props {
   market: Market;
   interval: Interval;
   deviation: number;
   onOpenSymbol: (symbol: string) => void;
+  watchlist: SymbolInfo[];
 }
 
-export default function Wave3Scanner({ market, interval, deviation, onOpenSymbol }: Props) {
+export default function Wave3Scanner({ market, interval, deviation, onOpenSymbol, watchlist }: Props) {
+  const [source, setSource] = useState<Source>("preset");
   const [results, setResults] = useState<ScanResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const watchlistForMarket = watchlist.filter((w) => w.market === market);
+
   useEffect(() => {
+    if (source === "watchlist" && watchlistForMarket.length === 0) {
+      setResults([]);
+      return;
+    }
     let cancelled = false;
     setLoading(true);
     setError(null);
-    scanWave3(market, interval, deviation)
+    scanWave3(market, interval, deviation, source === "watchlist" ? watchlistForMarket : undefined)
       .then((r) => {
         if (!cancelled) setResults(r);
       })
@@ -33,7 +43,10 @@ export default function Wave3Scanner({ market, interval, deviation, onOpenSymbol
     return () => {
       cancelled = true;
     };
-  }, [market, interval, deviation]);
+    // watchlistForMarket is derived fresh each render from the watchlist prop + market;
+    // re-running on its length is enough to catch additions/removals without an unstable dep.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [market, interval, deviation, source, watchlistForMarket.length]);
 
   return (
     <div className="scanner">
@@ -43,10 +56,23 @@ export default function Wave3Scanner({ market, interval, deviation, onOpenSymbol
           สแกนหาสัญลักษณ์ที่ Wave 2 เสร็จสมบูรณ์แล้วและกำลังรอทะลุแนวเข้าสู่ Wave 3 หรือยืนยัน Wave 3 แล้ว (คลื่นที่มักให้ผลตอบแทนแรงที่สุดในทฤษฎี
           Elliott Wave)
         </p>
+        <div className="scanner-source-tabs">
+          <button className={source === "preset" ? "active" : ""} onClick={() => setSource("preset")}>
+            รายการที่ตั้งไว้
+          </button>
+          <button className={source === "watchlist" ? "active" : ""} onClick={() => setSource("watchlist")}>
+            ★ Watchlist ของฉัน ({watchlistForMarket.length})
+          </button>
+        </div>
       </div>
+      {source === "watchlist" && watchlistForMarket.length === 0 && (
+        <div className="empty-state">
+          ยังไม่มีสัญลักษณ์ใน Watchlist ของตลาดนี้ — กดไอคอน ☆ ข้างสัญลักษณ์ในแถบด้านซ้ายหรือบนกราฟเพื่อเพิ่ม
+        </div>
+      )}
       {loading && <div className="empty-state">กำลังสแกน...</div>}
       {error && <div className="empty-state error">{error}</div>}
-      {!loading && !error && (
+      {!loading && !error && !(source === "watchlist" && watchlistForMarket.length === 0) && (
         <table className="scanner-table">
           <thead>
             <tr>
