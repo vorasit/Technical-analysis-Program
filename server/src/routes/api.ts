@@ -6,6 +6,8 @@ import { sma, ema, rsi, macd, bollinger, cdcActionZone } from "../services/indic
 import { analyzeWaves } from "../services/elliottWave.js";
 import { mapLimit } from "../services/concurrency.js";
 import { searchSymbols } from "../services/search.js";
+import { computeHorizonStats, findBacktestSignals } from "../services/backtest.js";
+import { BacktestSignal, BacktestSymbolResult } from "../types.js";
 
 const router = Router();
 
@@ -120,6 +122,56 @@ router.get("/mtf", async (req, res) => {
   );
 
   res.json(results);
+});
+
+router.get("/backtest", async (req, res) => {
+  const market = parseMarket(req.query.market);
+  const interval = parseInterval(req.query.interval) ?? "1d";
+  const deviation = req.query.deviation ? Number(req.query.deviation) : 3;
+  const singleSymbol = typeof req.query.symbol === "string" ? req.query.symbol : null;
+
+  if (!market) {
+    return res.status(400).json({ error: "Invalid or missing market. Use stock, commodity, or crypto." });
+  }
+
+  const resolvedMarket: Market = market;
+  const targets = singleSymbol
+    ? [{ symbol: singleSymbol, name: singleSymbol, market: resolvedMarket }]
+    : (parseCustomSymbols(req.query.symbols, resolvedMarket) ?? SYMBOLS[resolvedMarket]);
+
+  const fetchLimit = resolvedMarket === "crypto" ? 1000 : 400;
+
+  const results = await mapLimit(targets, 4, async (t) => {
+    const candles = await getCandles(resolvedMarket, t.symbol, interval, fetchLimit);
+    if (candles.length < 30) throw new Error("Not enough data for a meaningful backtest.");
+    const signals = findBacktestSignals(candles, deviation);
+    return { symbol: t.symbol, name: t.name, signals };
+  });
+
+  const bySymbol: BacktestSymbolResult[] = [];
+  const failures: { symbol: string; error: string }[] = [];
+  const allSignals: BacktestSignal[] = [];
+
+  results.forEach((r, i) => {
+    if (r.status === "fulfilled") {
+      bySymbol.push({
+        symbol: r.value.symbol,
+        name: r.value.name,
+        signalCount: r.value.signals.length,
+        horizonStats: computeHorizonStats(r.value.signals),
+      });
+      allSignals.push(...r.value.signals);
+    } else {
+      failures.push({ symbol: targets[i].symbol, error: r.reason instanceof Error ? r.reason.message : "Failed." });
+    }
+  });
+
+  res.json({
+    horizons: [5, 10, 20],
+    aggregate: computeHorizonStats(allSignals),
+    bySymbol,
+    failures,
+  });
 });
 
 router.get("/scan/wave3", async (req, res) => {

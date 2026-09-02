@@ -151,6 +151,29 @@ export interface MtfEntry {
   error?: string;
 }
 
+export interface HorizonStat {
+  horizon: number;
+  count: number;
+  winRate: number;
+  avgReturnPct: number;
+  medianReturnPct: number;
+  stopRatePct: number;
+}
+
+export interface BacktestSymbolResult {
+  symbol: string;
+  name: string;
+  signalCount: number;
+  horizonStats: HorizonStat[];
+}
+
+export interface BacktestResponse {
+  horizons: number[];
+  aggregate: HorizonStat[];
+  bySymbol: BacktestSymbolResult[];
+  failures: { symbol: string; error: string }[];
+}
+
 export interface AnalyzeResponse {
   symbol: string;
   market: Market;

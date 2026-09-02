@@ -1,4 +1,4 @@
-import type { AnalyzeResponse, Interval, Market, MtfEntry, ScanResult, SymbolInfo } from "./types";
+import type { AnalyzeResponse, BacktestResponse, Interval, Market, MtfEntry, ScanResult, SymbolInfo } from "./types";
 
 async function jsonOrThrow<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -38,4 +38,12 @@ export function getMtf(market: Market, symbol: string, deviation: number): Promi
 export function searchSymbols(market: Market, q: string): Promise<SymbolInfo[]> {
   const params = new URLSearchParams({ market, q });
   return fetch(`/api/search?${params.toString()}`).then((r) => jsonOrThrow<SymbolInfo[]>(r));
+}
+
+export function getBacktest(market: Market, interval: Interval, deviation: number, symbols?: SymbolInfo[]): Promise<BacktestResponse> {
+  const params = new URLSearchParams({ market, interval, deviation: String(deviation) });
+  if (symbols && symbols.length > 0) {
+    params.set("symbols", JSON.stringify(symbols.map((s) => ({ symbol: s.symbol, name: s.name }))));
+  }
+  return fetch(`/api/backtest?${params.toString()}`).then((r) => jsonOrThrow<BacktestResponse>(r));
 }
