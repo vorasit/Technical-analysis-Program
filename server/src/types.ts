@@ -103,3 +103,43 @@ export interface WaveAnalysis {
   fibonacci: FibAnalysis | null;
   pivots: Pivot[];
 }
+
+export interface BacktestReturn {
+  returnPct: number;
+  hitInvalidation: boolean;
+}
+
+export interface BacktestSignal {
+  direction: "up" | "down";
+  wave0Time: number;
+  wave1Time: number;
+  wave2Time: number;
+  entryTime: number;
+  entryPrice: number;
+  breakoutLevel: number;
+  invalidationLevel: number;
+  returns: Record<number, BacktestReturn | null>;
+}
+
+export interface HorizonStat {
+  horizon: number;
+  count: number;
+  winRate: number;
+  avgReturnPct: number;
+  medianReturnPct: number;
+  stopRatePct: number;
+}
+
+export interface BacktestSymbolResult {
+  symbol: string;
+  name: string;
+  signalCount: number;
+  horizonStats: HorizonStat[];
+}
+
+export interface BacktestResponse {
+  horizons: number[];
+  aggregate: HorizonStat[];
+  bySymbol: BacktestSymbolResult[];
+  failures: { symbol: string; error: string }[];
+}

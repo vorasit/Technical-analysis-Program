@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 import { analyze } from "./api";
+import BacktestPanel from "./components/BacktestPanel";
 import MtfPanel from "./components/MtfPanel";
 import PriceChart from "./components/PriceChart";
 import type { OverlayToggles } from "./components/PriceChart";
@@ -66,7 +67,7 @@ function loadSettings(): PersistedSettings {
   };
 }
 
-type View = "chart" | "scanner";
+type View = "chart" | "scanner" | "backtest";
 
 export default function App() {
   const [view, setView] = useState<View>("chart");
@@ -146,6 +147,9 @@ export default function App() {
           </button>
           <button className={view === "scanner" ? "active" : ""} onClick={() => setView("scanner")}>
             Wave 3 Scanner
+          </button>
+          <button className={view === "backtest" ? "active" : ""} onClick={() => setView("backtest")}>
+            Backtest
           </button>
         </nav>
         <div className="topbar-controls">
@@ -253,7 +257,7 @@ export default function App() {
               {data && <WavePanel wave={data.wave} symbol={data.symbol} />}
             </section>
           </>
-        ) : (
+        ) : view === "scanner" ? (
           <main className="chart-area">
             <Wave3Scanner
               market={market}
@@ -262,6 +266,10 @@ export default function App() {
               onOpenSymbol={handleOpenFromScanner}
               watchlist={watchlist}
             />
+          </main>
+        ) : (
+          <main className="chart-area">
+            <BacktestPanel market={market} interval={interval} deviation={deviation} watchlist={watchlist} />
           </main>
         )}
       </div>

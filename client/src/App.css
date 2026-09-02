@@ -626,6 +626,49 @@
   color: #79c0ff;
 }
 
+.backtest-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.backtest-card {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.backtest-card-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: #f0f6fc;
+  margin-bottom: 10px;
+}
+
+.backtest-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #8b949e;
+  padding: 4px 0;
+}
+
+.backtest-stat-row strong {
+  color: #c9d1d9;
+  font-family: ui-monospace, Consolas, monospace;
+}
+
+.pos {
+  color: #3fb950 !important;
+}
+
+.neg {
+  color: #f85149 !important;
+}
+
 .scanner-legend {
   display: flex;
   flex-wrap: wrap;
