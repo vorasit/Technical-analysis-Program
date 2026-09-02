@@ -13,6 +13,7 @@ import {
 } from "../types.js";
 import { cdcActionZone } from "./indicators.js";
 import { buildDivergenceMaps, checkHiddenDivergence } from "./divergence.js";
+import { computeRiskRewardPlan } from "./riskReward.js";
 
 type Six = [Pivot, Pivot, Pivot, Pivot, Pivot, Pivot];
 
@@ -196,6 +197,7 @@ const EMPTY_TRACKER: Wave2To3Tracker = {
   note: "Not enough swing data yet.",
   cdcConfluence: null,
   divergenceConfluence: null,
+  riskReward: null,
 };
 
 function pt(p: Pivot) {
@@ -268,6 +270,7 @@ function detectWave2To3(pivots: Pivot[]): Wave2To3Tracker {
       note: `${isUp ? "Bullish" : "Bearish"} Wave 3 is underway — price is already ${(extensionSoFar * 100).toFixed(0)}% of the Wave 1 length past Wave 2, following a ${(retraceRatio * 100).toFixed(0)}% Wave 2 pullback.`,
       cdcConfluence: null, // filled in by analyzeWaves, which has the candles this needs
       divergenceConfluence: null,
+      riskReward: computeRiskRewardPlan(isUp ? "up" : "down", pt(p0), pt(p1), pt(p2), breakoutLevel),
     };
   }
 
@@ -315,6 +318,7 @@ function detectWave2To3(pivots: Pivot[]): Wave2To3Tracker {
     } ${breakoutLevel.toFixed(4)} to confirm Wave 3 (currently ${progressPct}% of the way there).`,
     cdcConfluence: null, // filled in by analyzeWaves, which has the candles this needs
     divergenceConfluence: null,
+    riskReward: computeRiskRewardPlan(isUp ? "up" : "down", pt(p0), pt(p1), pt(effectiveWave2), breakoutLevel),
   };
 }
 
