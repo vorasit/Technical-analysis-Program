@@ -84,6 +84,9 @@ export default function Wave3Scanner({ market, interval, deviation, onOpenSymbol
             <div className="scanner-legend-item">
               <span className="badge">ยังไม่เข้าเงื่อนไข</span> ยังไม่พบรูปแบบ Wave 1-2 ที่ใช้ได้ในตอนนี้
             </div>
+            <div className="scanner-legend-item">
+              <span className="badge badge-confluence">✓ CDC ตรงกัน</span> ผลทดสอบย้อนหลังพบว่าให้ผลตอบแทนเฉลี่ยดีกว่าอย่างชัดเจน (ดูแท็บ Backtest)
+            </div>
           </div>
           <table className="scanner-table">
             <thead>
@@ -111,6 +114,14 @@ export default function Wave3Scanner({ market, interval, deviation, onOpenSymbol
                     {r.wave2to3.phase === "confirmed" && <span className="badge badge-active">Wave 3 กำลังเกิด</span>}
                     {r.wave2to3.phase === "watching" && <span className="badge badge-watching">รอทะลุ Wave 3</span>}
                     {r.wave2to3.phase === "none" && <span className="badge">ยังไม่เข้าเงื่อนไข</span>}
+                    {r.wave2to3.phase !== "none" && r.wave2to3.cdcConfluence !== null && (
+                      <span
+                        className={`badge ${r.wave2to3.cdcConfluence ? "badge-confluence" : "badge-no-confluence"}`}
+                        title="ผลทดสอบย้อนหลังพบว่าสัญญาณที่ CDC Action Zone เห็นตรงกันให้ผลตอบแทนเฉลี่ยดีกว่าอย่างชัดเจน (ดูแท็บ Backtest)"
+                      >
+                        {r.wave2to3.cdcConfluence ? "✓ CDC ตรงกัน" : "✗ CDC ไม่ตรงกัน"}
+                      </span>
+                    )}
                     {r.wave2to3.phase !== "none" && (
                       <div
                         className="mini-progress-track"

@@ -61,6 +61,8 @@ export interface Wave2To3Tracker {
   retraceRatio: number | null; // Wave 2 retracement of Wave 1, 0-1
   confidence: number;
   note: string;
+  /** Does the current CDC Action Zone agree with this signal's direction? null if no CDC data or no active direction. */
+  cdcConfluence: boolean | null;
 }
 
 export interface WaveChainPoint {
