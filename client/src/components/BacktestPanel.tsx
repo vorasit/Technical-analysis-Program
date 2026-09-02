@@ -115,6 +115,50 @@ export default function BacktestPanel({ market, interval, deviation, watchlist }
             ))}
           </div>
 
+          <div className="scanner-header">
+            <h2 className="backtest-subheading">เทียบผลเมื่อกรองด้วย CDC Action Zone</h2>
+            <p>
+              เช็คว่า ณ แท่งที่ราคาทะลุแนวยืนยัน Wave 3 นั้น CDC Action Zone (โซนเขียว/น้ำเงิน = ขาขึ้น, แดง/เหลือง = ขาลง) ชี้ไปทางเดียวกับคลื่นหรือไม่
+              — ถ้าตัวเลขฝั่ง "เห็นตรงกัน" ดีกว่าฝั่ง "ไม่ตรงกัน" อย่างสม่ำเสมอ แปลว่าการกรองด้วย CDC ช่วยคัดสัญญาณคุณภาพสูงขึ้นได้จริง
+            </p>
+          </div>
+          <table className="scanner-table confluence-table">
+            <thead>
+              <tr>
+                <th>ระยะ (แท่ง)</th>
+                <th>ทุกสัญญาณ</th>
+                <th>CDC เห็นตรงกัน</th>
+                <th>CDC ไม่ตรงกัน</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.horizons.map((h) => {
+                const all = data.aggregate.find((x) => x.horizon === h);
+                const yes = data.aggregateConfluence.find((x) => x.horizon === h);
+                const no = data.aggregateNoConfluence.find((x) => x.horizon === h);
+                return (
+                  <tr key={h}>
+                    <td className="mono">{h}</td>
+                    {[all, yes, no].map((stat, i) => (
+                      <td key={i} className="mono confluence-cell">
+                        {stat && stat.count > 0 ? (
+                          <>
+                            <span className={stat.winRate >= 50 ? "pos" : "neg"}>{stat.winRate.toFixed(0)}%</span>
+                            <span className={`confluence-return ${stat.avgReturnPct >= 0 ? "pos" : "neg"}`}>{fmtPct(stat.avgReturnPct)}</span>
+                            <span className="confluence-count">n={stat.count}</span>
+                          </>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          <h2 className="backtest-subheading">รายละเอียดต่อสัญลักษณ์ (ทุกสัญญาณ)</h2>
           <table className="scanner-table">
             <thead>
               <tr>

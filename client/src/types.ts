@@ -170,6 +170,8 @@ export interface BacktestSymbolResult {
 export interface BacktestResponse {
   horizons: number[];
   aggregate: HorizonStat[];
+  aggregateConfluence: HorizonStat[];
+  aggregateNoConfluence: HorizonStat[];
   bySymbol: BacktestSymbolResult[];
   failures: { symbol: string; error: string }[];
 }

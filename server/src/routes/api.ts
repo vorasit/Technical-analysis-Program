@@ -169,6 +169,8 @@ router.get("/backtest", async (req, res) => {
   res.json({
     horizons: [5, 10, 20],
     aggregate: computeHorizonStats(allSignals),
+    aggregateConfluence: computeHorizonStats(allSignals.filter((s) => s.cdcAgrees === true)),
+    aggregateNoConfluence: computeHorizonStats(allSignals.filter((s) => s.cdcAgrees === false)),
     bySymbol,
     failures,
   });
