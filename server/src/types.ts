@@ -76,6 +76,20 @@ export interface WaveChainRun {
   points: WaveChainPoint[];
 }
 
+export interface FibLevel {
+  ratio: number;
+  price: number;
+}
+
+export interface FibAnalysis {
+  high: number;
+  low: number;
+  direction: "up" | "down"; // "up" = retracement of an upswing (low -> high); "down" = retracement of a downswing
+  startTime: number;
+  endTime: number;
+  levels: FibLevel[];
+}
+
 export interface WaveAnalysis {
   bestCount: WaveCount | null;
   alternates: WaveCount[];
@@ -86,5 +100,6 @@ export interface WaveAnalysis {
   };
   wave2to3: Wave2To3Tracker;
   waveChain: WaveChainRun[];
+  fibonacci: FibAnalysis | null;
   pivots: Pivot[];
 }

@@ -107,28 +107,73 @@
   padding: 0 6px 10px;
 }
 
+.symbol-item-row {
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+}
+
+.symbol-item-row:hover {
+  background: #161b22;
+}
+
+.symbol-item-row.active {
+  background: #1f6feb22;
+}
+
+.symbol-item-row.active .symbol-item {
+  color: #79c0ff;
+}
+
 .symbol-item {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 8px;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   background: transparent;
   border: none;
-  border-radius: 6px;
-  padding: 6px 10px;
+  padding: 6px 4px 6px 10px;
   cursor: pointer;
   color: #c9d1d9;
   text-align: left;
 }
 
-.symbol-item:hover {
-  background: #161b22;
+.watch-toggle {
+  background: transparent;
+  border: none;
+  padding: 6px 10px 6px 4px;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  color: #6e7681;
 }
 
-.symbol-item.active {
-  background: #1f6feb22;
-  color: #79c0ff;
+.watch-toggle:hover {
+  color: #e3b341;
+}
+
+.watch-toggle.active {
+  color: #e3b341;
+}
+
+.watch-star {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  color: #6e7681;
+  margin-left: 4px;
+}
+
+.watch-star:hover {
+  color: #e3b341;
+}
+
+.watch-star.active {
+  color: #e3b341;
 }
 
 .symbol-text {
@@ -283,6 +328,63 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.mtf-panel {
+  margin: 14px;
+  padding: 12px;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+}
+
+.mtf-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.mtf-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #0d1117;
+  font-size: 12px;
+}
+
+.mtf-row.mtf-phase-confirmed {
+  background: #3fb95015;
+  border: 1px solid #3fb95044;
+}
+
+.mtf-row.mtf-phase-watching {
+  background: #e3b34112;
+  border: 1px solid #e3b34144;
+}
+
+.mtf-interval {
+  font-weight: 700;
+  min-width: 28px;
+  color: #f0f6fc;
+}
+
+.mtf-status {
+  flex: 1;
+  color: #8b949e;
+}
+
+.mtf-confidence {
+  font-weight: 600;
+  color: #c9d1d9;
+}
+
+.mtf-note {
+  margin: 10px 0 0;
+  font-size: 11px;
+  color: #8b949e;
 }
 
 .wave23-card {
@@ -500,6 +602,28 @@
   margin: 0 0 16px;
   color: #8b949e;
   font-size: 13px;
+}
+
+.scanner-source-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.scanner-source-tabs button {
+  background: transparent;
+  border: 1px solid #30363d;
+  color: #c9d1d9;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.scanner-source-tabs button.active {
+  background: #1f6feb33;
+  border-color: #1f6feb;
+  color: #79c0ff;
 }
 
 .scanner-table {

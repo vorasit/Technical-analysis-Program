@@ -1,4 +1,4 @@
-import type { AnalyzeResponse, Interval, Market, ScanResult, SymbolInfo } from "./types";
+import type { AnalyzeResponse, Interval, Market, MtfEntry, ScanResult, SymbolInfo } from "./types";
 
 async function jsonOrThrow<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -17,9 +17,22 @@ export function analyze(market: Market, symbol: string, interval: Interval, devi
   return fetch(`/api/analyze?${params.toString()}`).then((r) => jsonOrThrow<AnalyzeResponse>(r));
 }
 
-export function scanWave3(market: Market, interval: Interval, deviation: number): Promise<ScanResult[]> {
+export function scanWave3(
+  market: Market,
+  interval: Interval,
+  deviation: number,
+  symbols?: SymbolInfo[]
+): Promise<ScanResult[]> {
   const params = new URLSearchParams({ market, interval, deviation: String(deviation) });
+  if (symbols && symbols.length > 0) {
+    params.set("symbols", JSON.stringify(symbols.map((s) => ({ symbol: s.symbol, name: s.name }))));
+  }
   return fetch(`/api/scan/wave3?${params.toString()}`).then((r) => jsonOrThrow<ScanResult[]>(r));
+}
+
+export function getMtf(market: Market, symbol: string, deviation: number): Promise<MtfEntry[]> {
+  const params = new URLSearchParams({ market, symbol, deviation: String(deviation) });
+  return fetch(`/api/mtf?${params.toString()}`).then((r) => jsonOrThrow<MtfEntry[]>(r));
 }
 
 export function searchSymbols(market: Market, q: string): Promise<SymbolInfo[]> {

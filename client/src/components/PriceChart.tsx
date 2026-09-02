@@ -21,6 +21,7 @@ export interface OverlayToggles {
   volume: boolean;
   cdc: boolean;
   waveMap: boolean;
+  fibonacci: boolean;
 }
 
 interface Props {
@@ -88,6 +89,7 @@ export default function PriceChart({ data, overlays }: Props) {
     breakout: null,
     invalidation: null,
   });
+  const fibLinesRef = useRef<IPriceLine[]>([]);
 
   useLayoutEffect(() => {
     if (!containerRef.current) return;
@@ -193,6 +195,7 @@ export default function PriceChart({ data, overlays }: Props) {
       chainMarkersRef.current = null;
       chainLinesRef.current = [];
       wave23LinesRef.current = { breakout: null, invalidation: null };
+      fibLinesRef.current = [];
     };
   }, []);
 
@@ -362,6 +365,27 @@ export default function PriceChart({ data, overlays }: Props) {
     chainLinesRef.current = newLines;
     chainMarkersRef.current?.setMarkers(chainMarkers);
   }, [data, overlays.waveMap]);
+
+  useEffect(() => {
+    const s = seriesRef.current;
+    if (!s) return;
+
+    for (const line of fibLinesRef.current) s.candle.removePriceLine(line);
+    fibLinesRef.current = [];
+
+    if (!data || !overlays.fibonacci || !data.wave.fibonacci) return;
+
+    fibLinesRef.current = data.wave.fibonacci.levels.map((level) =>
+      s.candle.createPriceLine({
+        price: level.price,
+        color: level.ratio === 0 || level.ratio === 1 ? "#8b949e" : "#e3b341",
+        lineWidth: 1,
+        lineStyle: level.ratio > 1 ? 3 : 2,
+        axisLabelVisible: true,
+        title: `Fib ${(level.ratio * 100).toFixed(1)}%`,
+      })
+    );
+  }, [data, overlays.fibonacci]);
 
   useEffect(() => {
     const s = seriesRef.current;
