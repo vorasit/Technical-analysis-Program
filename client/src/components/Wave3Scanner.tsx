@@ -73,55 +73,68 @@ export default function Wave3Scanner({ market, interval, deviation, onOpenSymbol
       {loading && <div className="empty-state">กำลังสแกน...</div>}
       {error && <div className="empty-state error">{error}</div>}
       {!loading && !error && !(source === "watchlist" && watchlistForMarket.length === 0) && (
-        <table className="scanner-table">
-          <thead>
-            <tr>
-              <th>สัญลักษณ์</th>
-              <th>ชื่อ</th>
-              <th>ราคาล่าสุด</th>
-              <th>สถานะ</th>
-              <th>ความคืบหน้า</th>
-              <th>ความเชื่อมั่น</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {results.map((r) => (
-              <tr key={r.symbol} className={r.wave2to3.phase !== "none" ? `row-${r.wave2to3.phase}` : ""}>
-                <td className="mono symbol-cell">
-                  <SymbolLogo symbol={r.symbol} market={r.market} size={20} />
-                  {r.symbol}
-                </td>
-                <td>{r.name}</td>
-                <td className="mono">{formatPrice(r.lastPrice)}</td>
-                <td>
-                  {r.wave2to3.phase === "confirmed" && <span className="badge badge-active">Wave 3 กำลังเกิด</span>}
-                  {r.wave2to3.phase === "watching" && <span className="badge badge-watching">รอทะลุ Wave 3</span>}
-                  {r.wave2to3.phase === "none" && <span className="badge">ยังไม่เข้าเงื่อนไข</span>}
-                </td>
-                <td>
-                  {r.wave2to3.phase !== "none" ? (
-                    <div className="mini-progress-track">
-                      <div
-                        className={`mini-progress-fill ${r.wave2to3.phase === "confirmed" ? "confirmed" : ""}`}
-                        style={{ width: `${Math.max(0, Math.min(100, r.wave2to3.progressPct))}%` }}
-                      />
-                      <span className="mini-progress-text">{r.wave2to3.progressPct}%</span>
-                    </div>
-                  ) : (
-                    "-"
-                  )}
-                </td>
-                <td className="mono">{r.wave2to3.phase !== "none" ? `${r.wave2to3.confidence}%` : "-"}</td>
-                <td>
-                  <button className="link-btn" onClick={() => onOpenSymbol(r.symbol)}>
-                    ดูกราฟ
-                  </button>
-                </td>
+        <>
+          <div className="scanner-legend">
+            <div className="scanner-legend-item">
+              <span className="badge badge-active">Wave 3 กำลังเกิด</span> ราคาทะลุแนว Wave 1 แล้ว — กำลังเคลื่อนที่เป็น Wave 3 จริง
+            </div>
+            <div className="scanner-legend-item">
+              <span className="badge badge-watching">รอทะลุ Wave 3</span> Wave 2 ปรับฐานเสร็จแล้ว รอราคาทะลุแนวเพื่อยืนยัน
+            </div>
+            <div className="scanner-legend-item">
+              <span className="badge">ยังไม่เข้าเงื่อนไข</span> ยังไม่พบรูปแบบ Wave 1-2 ที่ใช้ได้ในตอนนี้
+            </div>
+          </div>
+          <table className="scanner-table">
+            <thead>
+              <tr>
+                <th>สัญลักษณ์</th>
+                <th>ชื่อ</th>
+                <th>ราคาล่าสุด</th>
+                <th>สถานะ &amp; ระยะทางถึงจุดทะลุ</th>
+                <th title="คุณภาพของรูปแบบคลื่นตามอัตราส่วน Fibonacci และกฎ Elliott Wave — ไม่เกี่ยวกับระยะทางราคา">
+                  ความมั่นใจของรูปแบบคลื่น
+                </th>
+                <th></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {results.map((r) => (
+                <tr key={r.symbol} className={r.wave2to3.phase !== "none" ? `row-${r.wave2to3.phase}` : ""}>
+                  <td className="mono symbol-cell">
+                    <SymbolLogo symbol={r.symbol} market={r.market} size={20} />
+                    {r.symbol}
+                  </td>
+                  <td>{r.name}</td>
+                  <td className="mono">{formatPrice(r.lastPrice)}</td>
+                  <td className="status-cell">
+                    {r.wave2to3.phase === "confirmed" && <span className="badge badge-active">Wave 3 กำลังเกิด</span>}
+                    {r.wave2to3.phase === "watching" && <span className="badge badge-watching">รอทะลุ Wave 3</span>}
+                    {r.wave2to3.phase === "none" && <span className="badge">ยังไม่เข้าเงื่อนไข</span>}
+                    {r.wave2to3.phase !== "none" && (
+                      <div
+                        className="mini-progress-track"
+                        title="ระยะทางที่ราคาเคลื่อนไปแล้ว เทียบกับระยะที่ต้องใช้ทะลุแนว (หรือขยายคลื่น 3 ถ้ายืนยันแล้ว)"
+                      >
+                        <div
+                          className={`mini-progress-fill ${r.wave2to3.phase === "confirmed" ? "confirmed" : ""}`}
+                          style={{ width: `${Math.max(0, Math.min(100, r.wave2to3.progressPct))}%` }}
+                        />
+                        <span className="mini-progress-text">{r.wave2to3.progressPct}%</span>
+                      </div>
+                    )}
+                  </td>
+                  <td className="mono">{r.wave2to3.phase !== "none" ? `${r.wave2to3.confidence}%` : "-"}</td>
+                  <td>
+                    <button className="link-btn" onClick={() => onOpenSymbol(r.symbol)}>
+                      ดูกราฟ
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
       )}
     </div>
   );
