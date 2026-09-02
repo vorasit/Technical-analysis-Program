@@ -626,6 +626,33 @@
   color: #79c0ff;
 }
 
+.backtest-subheading {
+  font-size: 15px;
+  margin: 20px 0 4px;
+  color: #f0f6fc;
+}
+
+.confluence-table th:not(:first-child),
+.confluence-cell {
+  text-align: center;
+}
+
+.confluence-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.confluence-return {
+  font-size: 11px;
+}
+
+.confluence-count {
+  font-size: 10px;
+  color: #6e7681;
+}
+
 .backtest-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

@@ -118,6 +118,8 @@ export interface BacktestSignal {
   entryPrice: number;
   breakoutLevel: number;
   invalidationLevel: number;
+  /** Did the CDC Action Zone agree with this signal's direction at entry? null if no CDC data yet (warmup period). */
+  cdcAgrees: boolean | null;
   returns: Record<number, BacktestReturn | null>;
 }
 
@@ -140,6 +142,8 @@ export interface BacktestSymbolResult {
 export interface BacktestResponse {
   horizons: number[];
   aggregate: HorizonStat[];
+  aggregateConfluence: HorizonStat[]; // signals only where the CDC Action Zone agreed with the wave's direction
+  aggregateNoConfluence: HorizonStat[]; // signals only where it disagreed
   bySymbol: BacktestSymbolResult[];
   failures: { symbol: string; error: string }[];
 }

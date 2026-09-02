@@ -1,5 +1,6 @@
 import { BacktestSignal, Candle, HorizonStat, Pivot } from "../types.js";
 import { computeZigzag } from "./elliottWave.js";
+import { cdcActionZone } from "./indicators.js";
 
 export const BACKTEST_HORIZONS = [5, 10, 20];
 
@@ -20,6 +21,15 @@ export const BACKTEST_HORIZONS = [5, 10, 20];
 export function findBacktestSignals(candles: Candle[], deviationPct: number): BacktestSignal[] {
   const pivots = computeZigzag(candles, deviationPct);
   const signals: BacktestSignal[] = [];
+
+  const cdcByTime = new Map(cdcActionZone(candles).map((p) => [p.time, p.zone]));
+  function cdcAgreesAt(time: number, isUp: boolean): boolean | null {
+    const zone = cdcByTime.get(time);
+    if (!zone) return null;
+    const bullZone = zone === "green" || zone === "blue";
+    const bearZone = zone === "red" || zone === "yellow";
+    return isUp ? bullZone : bearZone;
+  }
 
   for (let i = 0; i + 2 < pivots.length; i++) {
     const p0 = pivots[i];
@@ -70,6 +80,7 @@ export function findBacktestSignals(candles: Candle[], deviationPct: number): Ba
       entryPrice,
       breakoutLevel,
       invalidationLevel,
+      cdcAgrees: cdcAgreesAt(candles[entryIdx].time, isUp),
       returns,
     });
   }
