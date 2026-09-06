@@ -95,6 +95,7 @@ export default function App() {
   const [watchlist, setWatchlist] = useState<SymbolInfo[]>(() => loadWatchlist(market));
   const [overlays, setOverlays] = useState<OverlayToggles>(initialSettings.overlays);
   const [journal, setJournal] = useState<JournalEntry[]>(() => loadJournal());
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const detailsRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -172,6 +173,9 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <div className="brand">📈 TA Wave Hub</div>
+        <button className="sidebar-toggle" onClick={() => setSidebarOpen((v) => !v)}>
+          ☰ สัญลักษณ์
+        </button>
         <nav className="view-tabs">
           <button className={view === "chart" ? "active" : ""} onClick={() => setView("chart")}>
             กราฟ
@@ -208,15 +212,20 @@ export default function App() {
       </header>
 
       <div className="body">
-        <Sidebar
-          market={market}
-          onMarketChange={handleMarketChange}
-          selectedSymbol={selected.symbol}
-          onSelectSymbol={setSelected}
-          recents={recents}
-          watchlist={watchlist}
-          onToggleWatchlist={handleToggleWatchlist}
-        />
+        <div className={`sidebar-drawer ${sidebarOpen ? "open" : ""}`}>
+          <Sidebar
+            market={market}
+            onMarketChange={handleMarketChange}
+            selectedSymbol={selected.symbol}
+            onSelectSymbol={(s) => {
+              setSelected(s);
+              setSidebarOpen(false);
+            }}
+            recents={recents}
+            watchlist={watchlist}
+            onToggleWatchlist={handleToggleWatchlist}
+          />
+        </div>
 
         {view === "chart" ? (
           <>

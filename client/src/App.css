@@ -1165,3 +1165,94 @@
   white-space: normal;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
+
+/* Responsive layout */
+
+.sidebar-drawer {
+  display: contents;
+}
+
+.sidebar-toggle {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .app {
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .topbar {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .view-tabs {
+    flex-wrap: wrap;
+  }
+
+  .topbar-controls {
+    margin-left: 0;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .sidebar-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+
+  .body {
+    flex-direction: column;
+    height: auto;
+    overflow: visible;
+  }
+
+  .sidebar-drawer {
+    display: none;
+  }
+
+  .sidebar-drawer.open {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    max-height: 60vh;
+    border-right: none;
+    border-bottom: 1px solid #30363d;
+  }
+
+  .chart-area {
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+  }
+
+  .chart-toolbar {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .chart-container {
+    flex: none;
+    height: 50vh;
+  }
+
+  .side-panel {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid #30363d;
+    overflow-y: visible;
+    max-height: none;
+  }
+}
