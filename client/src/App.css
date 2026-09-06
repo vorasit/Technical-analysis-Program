@@ -868,6 +868,7 @@
   padding: 2px 8px;
   border-radius: 10px;
   font-size: 11px;
+  white-space: nowrap;
 }
 
 .badge-active {
@@ -1016,6 +1017,13 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-bottom: 6px;
+}
+
+.journal-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
   margin-bottom: 6px;
 }
 

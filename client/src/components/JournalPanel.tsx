@@ -247,11 +247,13 @@ function EntryCard({ entry, state, onDelete }: { entry: JournalEntry; state: Ent
           <SymbolLogo symbol={entry.symbol} market={entry.market} size={22} />
           {entry.symbol} <small>{entry.name}</small>
         </span>
-        <span className={`badge ${entry.direction === "up" ? "badge-active" : "badge-stopped"}`}>{entry.direction === "up" ? "▲ Long" : "▼ Short"}</span>
-        <span className="badge">{entry.phaseAtLog === "confirmed" ? "บันทึกตอนยืนยันแล้ว" : "บันทึกตอนรอทะลุ"}</span>
         <button className="journal-delete" onClick={() => onDelete(entry.id)} title="ลบออกจาก Journal">
           ✕
         </button>
+      </div>
+      <div className="journal-card-badges">
+        <span className={`badge ${entry.direction === "up" ? "badge-active" : "badge-stopped"}`}>{entry.direction === "up" ? "▲ Long" : "▼ Short"}</span>
+        <span className="badge">{entry.phaseAtLog === "confirmed" ? "บันทึกตอนยืนยันแล้ว" : "บันทึกตอนรอทะลุ"}</span>
       </div>
       <div className="journal-meta">
         บันทึกเมื่อ {fmtDateTime(entry.loggedAt)} · ราคาตอนบันทึก {formatPrice(entry.entryPrice)} · ความมั่นใจตอนบันทึก {entry.confidence}%
