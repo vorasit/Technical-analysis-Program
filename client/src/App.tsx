@@ -25,7 +25,14 @@ const RECENT_KEY_PREFIX = "ta-recent-symbols:";
 const WATCHLIST_KEY_PREFIX = "ta-watchlist:";
 const SETTINGS_KEY = "ta-settings";
 const JOURNAL_KEY = "ta-journal";
+const VIEW_MODE_KEY = "ta-view-mode";
 const MAX_RECENTS = 8;
+
+type ViewMode = "simple" | "pro";
+
+function loadViewMode(): ViewMode {
+  return loadJSON<ViewMode>(VIEW_MODE_KEY, "simple");
+}
 
 function loadRecents(market: Market): SymbolInfo[] {
   return loadJSON<SymbolInfo[]>(RECENT_KEY_PREFIX + market, []);
@@ -96,11 +103,25 @@ export default function App() {
   const [overlays, setOverlays] = useState<OverlayToggles>(initialSettings.overlays);
   const [journal, setJournal] = useState<JournalEntry[]>(() => loadJournal());
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>(loadViewMode);
   const detailsRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     saveJSON(SETTINGS_KEY, { interval, deviation, overlays });
   }, [interval, deviation, overlays]);
+
+  useEffect(() => {
+    saveJSON(VIEW_MODE_KEY, viewMode);
+  }, [viewMode]);
+
+  function handleViewModeChange(mode: ViewMode) {
+    setViewMode(mode);
+    if (mode === "simple" && view === "scanner") setView("chart");
+  }
+
+  // Simple mode always shows the plain price chart (main SMAs + best wave), regardless of
+  // whatever indicator overlays were left toggled on from a previous Pro-mode session.
+  const effectiveOverlays = viewMode === "pro" ? overlays : DEFAULT_OVERLAYS;
 
   useEffect(() => {
     let cancelled = false;
@@ -180,9 +201,11 @@ export default function App() {
           <button className={view === "chart" ? "active" : ""} onClick={() => setView("chart")}>
             กราฟ
           </button>
-          <button className={view === "scanner" ? "active" : ""} onClick={() => setView("scanner")}>
-            Wave 3 Scanner
-          </button>
+          {viewMode === "pro" && (
+            <button className={view === "scanner" ? "active" : ""} onClick={() => setView("scanner")}>
+              Wave 3 Scanner
+            </button>
+          )}
           <button className={view === "backtest" ? "active" : ""} onClick={() => setView("backtest")}>
             Backtest
           </button>
@@ -190,6 +213,17 @@ export default function App() {
             Journal{journal.length > 0 ? ` (${journal.length})` : ""}
           </button>
         </nav>
+        <div className="mode-toggle" title="โหมด Simple ซ่อนรายละเอียดเชิงลึก ส่วนโหมด Pro แสดงข้อมูลครบทุกอย่าง">
+          <button
+            className={`mode-btn mode-simple ${viewMode === "simple" ? "active" : ""}`}
+            onClick={() => handleViewModeChange("simple")}
+          >
+            🔰 Simple
+          </button>
+          <button className={`mode-btn mode-pro ${viewMode === "pro" ? "active" : ""}`} onClick={() => handleViewModeChange("pro")}>
+            🛠️ Pro
+          </button>
+        </div>
         <div className="topbar-controls">
           <label>
             Timeframe:
@@ -248,33 +282,35 @@ export default function App() {
                     {watchlist.some((w) => w.symbol.toUpperCase() === selected.symbol.toUpperCase()) ? "★" : "☆"}
                   </button>
                 </span>
-                <div className="overlay-toggles">
-                  {(
-                    [
-                      ["sma20", "SMA20"],
-                      ["sma50", "SMA50"],
-                      ["ema12", "EMA12"],
-                      ["ema26", "EMA26"],
-                      ["bollinger", "Bollinger"],
-                      ["wave", "Best Wave"],
-                      ["waveMap", "Wave Map (เต็ม)"],
-                      ["fibonacci", "Fibonacci"],
-                      ["volume", "Volume"],
-                      ["cdc", "CDC Action Zone"],
-                    ] as [keyof OverlayToggles, string][]
-                  ).map(([key, label]) => (
-                    <label key={key} className="toggle">
-                      <input
-                        type="checkbox"
-                        checked={overlays[key]}
-                        onChange={(e) => setOverlays((prev) => ({ ...prev, [key]: e.target.checked }))}
-                      />
-                      {label}
-                    </label>
-                  ))}
-                </div>
+                {viewMode === "pro" && (
+                  <div className="overlay-toggles">
+                    {(
+                      [
+                        ["sma20", "SMA20"],
+                        ["sma50", "SMA50"],
+                        ["ema12", "EMA12"],
+                        ["ema26", "EMA26"],
+                        ["bollinger", "Bollinger"],
+                        ["wave", "Best Wave"],
+                        ["waveMap", "Wave Map (เต็ม)"],
+                        ["fibonacci", "Fibonacci"],
+                        ["volume", "Volume"],
+                        ["cdc", "CDC Action Zone"],
+                      ] as [keyof OverlayToggles, string][]
+                    ).map(([key, label]) => (
+                      <label key={key} className="toggle">
+                        <input
+                          type="checkbox"
+                          checked={overlays[key]}
+                          onChange={(e) => setOverlays((prev) => ({ ...prev, [key]: e.target.checked }))}
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
-              {overlays.cdc && (
+              {effectiveOverlays.cdc && (
                 <div className="cdc-legend">
                   <span className="cdc-swatch" style={{ background: "#00c853" }} /> เขียว = โซนซื้อ (Buy Zone)
                   <span className="cdc-swatch" style={{ background: "#2962ff" }} /> น้ำเงิน = ขาขึ้นแต่พักตัว (ระวัง)
@@ -282,7 +318,7 @@ export default function App() {
                   <span className="cdc-swatch" style={{ background: "#ffd600" }} /> เหลือง = ขาลงแต่เด้ง (ระวัง)
                 </div>
               )}
-              {overlays.waveMap && (
+              {effectiveOverlays.waveMap && (
                 <div className="cdc-legend">
                   <span className="cdc-swatch" style={{ background: "#3172f0" }} /> กล่องน้ำเงิน 1-5 = คลื่นส่ง (Impulse)
                   <span className="cdc-swatch" style={{ background: "#e0455b" }} /> กล่องแดง A-B-C = คลื่นปรับ (Corrective)
@@ -290,7 +326,7 @@ export default function App() {
                   <span className="cdc-swatch" style={{ background: "#ff6b81" }} /> เส้นชมพู = ช่วงคลื่นปรับ
                 </div>
               )}
-              {overlays.fibonacci && (
+              {effectiveOverlays.fibonacci && (
                 <div className="cdc-legend">
                   <span>เส้นประทอง = ระดับ Fibonacci Retracement จากสวิงล่าสุด (0% ถึง 100%)</span>
                 </div>
@@ -298,11 +334,11 @@ export default function App() {
               <div className="chart-container">
                 {loading && <div className="overlay-message">กำลังโหลดข้อมูล...</div>}
                 {error && <div className="overlay-message error">{error}</div>}
-                <PriceChart data={data} overlays={overlays} />
+                <PriceChart data={data} overlays={effectiveOverlays} simpleMode={viewMode === "simple"} />
               </div>
             </main>
             <section className="side-panel" ref={detailsRef}>
-              {data && <MtfPanel market={market} symbol={selected.symbol} deviation={deviation} />}
+              {data && viewMode === "pro" && <MtfPanel market={market} symbol={selected.symbol} deviation={deviation} />}
               {data && (
                 <WavePanel
                   wave={data.wave}
@@ -314,6 +350,7 @@ export default function App() {
                   lastPrice={data.candles[data.candles.length - 1]?.close ?? 0}
                   lastTime={data.candles[data.candles.length - 1]?.time ?? 0}
                   onLogSignal={handleLogSignal}
+                  simpleMode={viewMode === "simple"}
                 />
               )}
             </section>

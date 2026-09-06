@@ -27,6 +27,8 @@ export interface OverlayToggles {
 interface Props {
   data: AnalyzeResponse | null;
   overlays: OverlayToggles;
+  /** Simple mode collapses the RSI/MACD panes so only price (with support/resistance levels) and volume show. */
+  simpleMode?: boolean;
 }
 
 const WAVE_COLOR = "#f5c451";
@@ -62,7 +64,7 @@ function splitChainByPhase(points: WaveChainPoint[]): { phase: WaveChainPoint["p
   return groups;
 }
 
-export default function PriceChart({ data, overlays }: Props) {
+export default function PriceChart({ data, overlays, simpleMode }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<{
@@ -389,6 +391,21 @@ export default function PriceChart({ data, overlays }: Props) {
       })
     );
   }, [data, overlays.fibonacci]);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    const panes = chart.panes();
+    if (simpleMode) {
+      panes[0]?.setStretchFactor(10);
+      panes[1]?.setStretchFactor(0.0001);
+      panes[2]?.setStretchFactor(0.0001);
+    } else {
+      panes[0]?.setStretchFactor(5);
+      panes[1]?.setStretchFactor(1.6);
+      panes[2]?.setStretchFactor(1.6);
+    }
+  }, [simpleMode]);
 
   useEffect(() => {
     const s = seriesRef.current;

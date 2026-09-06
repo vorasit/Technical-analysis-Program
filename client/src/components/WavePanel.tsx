@@ -227,9 +227,22 @@ interface WavePanelProps {
   lastPrice: number;
   lastTime: number;
   onLogSignal: (entry: NewJournalEntry) => void;
+  /** Simple mode hides the raw wave sub-count numbers and keeps just the Wave 2→3 status and Risk/Reward box. */
+  simpleMode?: boolean;
 }
 
-export default function WavePanel({ wave, symbol, name, market, interval, deviation, lastPrice, lastTime, onLogSignal }: WavePanelProps) {
+export default function WavePanel({
+  wave,
+  symbol,
+  name,
+  market,
+  interval,
+  deviation,
+  lastPrice,
+  lastTime,
+  onLogSignal,
+  simpleMode,
+}: WavePanelProps) {
   return (
     <div className="wave-panel">
       <Wave2To3Card
@@ -244,28 +257,32 @@ export default function WavePanel({ wave, symbol, name, market, interval, deviat
         onLogSignal={onLogSignal}
       />
 
-      <div className="section-label">
-        การนับคลื่น <InfoTooltip term="Elliott Wave">Elliott Wave</InfoTooltip> อัตโนมัติ
-      </div>
+      {!simpleMode && (
+        <>
+          <div className="section-label">
+            การนับคลื่น <InfoTooltip term="Elliott Wave">Elliott Wave</InfoTooltip> อัตโนมัติ
+          </div>
 
-      {wave.bestCount ? (
-        <CountCard title="Best auto wave count" count={wave.bestCount} />
-      ) : (
-        <div className="empty-state">No valid 5-wave impulse pattern found in the visible range. Try a different timeframe or sensitivity.</div>
+          {wave.bestCount ? (
+            <CountCard title="Best auto wave count" count={wave.bestCount} />
+          ) : (
+            <div className="empty-state">No valid 5-wave impulse pattern found in the visible range. Try a different timeframe or sensitivity.</div>
+          )}
+
+          {wave.alternates.length > 0 && (
+            <div>
+              <div className="section-label">Alternate counts</div>
+              {wave.alternates.map((c, i) => (
+                <CountCard key={i} title={`Alternate ${i + 1}`} count={c} />
+              ))}
+            </div>
+          )}
+
+          <p className="disclaimer">
+            Elliott Wave counting is inherently subjective. This is an automated, rule-based approximation for idea generation only — not financial advice.
+          </p>
+        </>
       )}
-
-      {wave.alternates.length > 0 && (
-        <div>
-          <div className="section-label">Alternate counts</div>
-          {wave.alternates.map((c, i) => (
-            <CountCard key={i} title={`Alternate ${i + 1}`} count={c} />
-          ))}
-        </div>
-      )}
-
-      <p className="disclaimer">
-        Elliott Wave counting is inherently subjective. This is an automated, rule-based approximation for idea generation only — not financial advice.
-      </p>
     </div>
   );
 }

@@ -44,6 +44,35 @@
   color: #79c0ff;
 }
 
+.mode-toggle {
+  display: flex;
+  gap: 2px;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.mode-btn {
+  background: transparent;
+  border: none;
+  color: #8b949e;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.mode-btn.mode-simple.active {
+  background: #2ea04333;
+  color: #3fb950;
+}
+
+.mode-btn.mode-pro.active {
+  background: #bc8cff33;
+  color: #bc8cff;
+}
+
 .topbar-controls {
   margin-left: auto;
   display: flex;
