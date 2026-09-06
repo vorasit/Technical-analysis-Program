@@ -1,14 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { getSymbols, searchSymbols } from "../api";
+import { MARKET_LABEL } from "../marketLabels";
 import SymbolLogo from "./SymbolLogo";
 import type { Market, SymbolInfo } from "../types";
-
-const MARKET_LABEL: Record<Market, string> = {
-  stock: "หุ้น",
-  commodity: "แร่ / โภคภัณฑ์",
-  crypto: "คริปโต",
-  forex: "Forex",
-};
 
 const SEARCH_DEBOUNCE_MS = 350;
 const MIN_QUERY_LENGTH = 2;

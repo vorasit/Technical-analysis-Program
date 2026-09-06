@@ -24,12 +24,13 @@ interface Wave2To3CardProps {
   name: string;
   market: Market;
   interval: Interval;
+  deviation: number;
   lastPrice: number;
   lastTime: number;
   onLogSignal: (entry: NewJournalEntry) => void;
 }
 
-function Wave2To3Card({ tracker, symbol, name, market, interval, lastPrice, lastTime, onLogSignal }: Wave2To3CardProps) {
+function Wave2To3Card({ tracker, symbol, name, market, interval, deviation, lastPrice, lastTime, onLogSignal }: Wave2To3CardProps) {
   const barPct = Math.max(0, Math.min(100, tracker.progressPct));
   const canLog = tracker.phase !== "none" && tracker.direction !== null && tracker.riskReward !== null && tracker.invalidationLevel !== null;
 
@@ -40,6 +41,7 @@ function Wave2To3Card({ tracker, symbol, name, market, interval, lastPrice, last
       name,
       market,
       interval,
+      deviation,
       direction: tracker.direction,
       entryTime: lastTime,
       entryPrice: lastPrice,
@@ -213,12 +215,13 @@ interface WavePanelProps {
   name: string;
   market: Market;
   interval: Interval;
+  deviation: number;
   lastPrice: number;
   lastTime: number;
   onLogSignal: (entry: NewJournalEntry) => void;
 }
 
-export default function WavePanel({ wave, symbol, name, market, interval, lastPrice, lastTime, onLogSignal }: WavePanelProps) {
+export default function WavePanel({ wave, symbol, name, market, interval, deviation, lastPrice, lastTime, onLogSignal }: WavePanelProps) {
   return (
     <div className="wave-panel">
       <Wave2To3Card
@@ -227,6 +230,7 @@ export default function WavePanel({ wave, symbol, name, market, interval, lastPr
         name={name}
         market={market}
         interval={interval}
+        deviation={deviation}
         lastPrice={lastPrice}
         lastTime={lastTime}
         onLogSignal={onLogSignal}

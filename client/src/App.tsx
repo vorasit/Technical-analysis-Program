@@ -293,6 +293,7 @@ export default function App() {
                   name={selected.name}
                   market={market}
                   interval={interval}
+                  deviation={deviation}
                   lastPrice={data.candles[data.candles.length - 1]?.close ?? 0}
                   lastTime={data.candles[data.candles.length - 1]?.time ?? 0}
                   onLogSignal={handleLogSignal}

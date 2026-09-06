@@ -246,6 +246,7 @@ export interface JournalEntry {
   name: string;
   market: Market;
   interval: Interval;
+  deviation: number; // zigzag sensitivity in effect when logged — needed to fetch a matching Backtest run for comparison
   direction: "up" | "down";
   loggedAt: number; // unix seconds, when the entry was added to the journal
   entryTime: number; // time of the last candle at logging — where the server starts scanning forward from
