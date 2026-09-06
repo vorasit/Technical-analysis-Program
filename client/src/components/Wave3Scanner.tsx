@@ -172,6 +172,7 @@ export default function Wave3Scanner({ market, interval, deviation, onOpenSymbol
                             name: r.name,
                             market: r.market,
                             interval,
+                            deviation,
                             direction: r.wave2to3.direction!,
                             entryTime: r.lastTime,
                             entryPrice: r.lastPrice,

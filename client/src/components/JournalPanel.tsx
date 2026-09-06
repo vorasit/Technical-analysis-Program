@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { getJournalStatus } from "../api";
+import { getBacktest, getJournalStatus } from "../api";
 import { formatPrice } from "../format";
+import { MARKET_LABEL } from "../marketLabels";
 import SymbolLogo from "./SymbolLogo";
-import type { JournalEntry, JournalStatus } from "../types";
+import type { BacktestResponse, JournalEntry, JournalStatus, Market } from "../types";
 
 interface Props {
   entries: JournalEntry[];
@@ -14,6 +15,10 @@ interface EntryState {
   loading: boolean;
   error: string | null;
 }
+
+// The middle of the backtest's 3 fixed horizons — a reasonable single point of
+// comparison against the journal's own (path-dependent, not fixed-bar) outcomes.
+const COMPARISON_HORIZON = 10;
 
 function fmtDateTime(t: number): string {
   return new Date(t * 1000).toLocaleString();
@@ -93,6 +98,139 @@ function JournalSummary({ entries, states }: { entries: JournalEntry[]; states: 
           </strong>
         </div>
       </div>
+    </div>
+  );
+}
+
+interface MarketBacktestState {
+  data: BacktestResponse | null;
+  error: string | null;
+  loading: boolean;
+  interval: string;
+  deviation: number;
+}
+
+function journalStatsForMarket(entries: JournalEntry[], states: Record<string, EntryState>, market: Market) {
+  let closedCount = 0;
+  let openCount = 0;
+  let targetHitCount = 0;
+  let sumReturnClosed = 0;
+
+  for (const e of entries) {
+    if (e.market !== market) continue;
+    const status = states[e.id]?.status;
+    if (!status) continue;
+    if (status.status === "open") {
+      openCount++;
+      continue;
+    }
+    closedCount++;
+    sumReturnClosed += status.returnPct;
+    if (status.status === "target_hit") targetHitCount++;
+  }
+
+  return {
+    closedCount,
+    openCount,
+    winRate: closedCount > 0 ? (targetHitCount / closedCount) * 100 : null,
+    avgReturn: closedCount > 0 ? sumReturnClosed / closedCount : null,
+  };
+}
+
+/**
+ * Backtest predicts win rate from theory; the journal shows what actually
+ * happened. This puts them side by side, per market, so it's obvious whether
+ * live results are tracking what the backtest promised or drifting from it.
+ * Uses the most recently logged entry's timeframe/sensitivity for that
+ * market's backtest fetch, since that's the setup actually in use now.
+ */
+function JournalVsBacktest({ entries, states }: { entries: JournalEntry[]; states: Record<string, EntryState> }) {
+  const markets = Array.from(new Set(entries.map((e) => e.market)));
+  const [backtests, setBacktests] = useState<Partial<Record<Market, MarketBacktestState>>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    markets.forEach((market) => {
+      const newest = entries.find((e) => e.market === market);
+      if (!newest) return;
+      setBacktests((prev) => ({
+        ...prev,
+        [market]: { data: null, error: null, loading: true, interval: newest.interval, deviation: newest.deviation },
+      }));
+      getBacktest(market, newest.interval, newest.deviation)
+        .then((r) => {
+          if (!cancelled) setBacktests((prev) => ({ ...prev, [market]: { data: r, error: null, loading: false, interval: newest.interval, deviation: newest.deviation } }));
+        })
+        .catch((e) => {
+          if (!cancelled)
+            setBacktests((prev) => ({ ...prev, [market]: { data: null, error: e.message, loading: false, interval: newest.interval, deviation: newest.deviation } }));
+        });
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [markets.join(","), entries.length]);
+
+  if (markets.length === 0) return null;
+
+  return (
+    <div className="journal-compare">
+      <h3>เทียบผลจริงกับที่ Backtest ทำนายไว้</h3>
+      <p className="journal-compare-caption">
+        เทียบที่ระยะ {COMPARISON_HORIZON} แท่งเทียนหลังสัญญาณ โดยใช้ Timeframe/ความไว Zigzag ล่าสุดที่บันทึกไว้ของแต่ละตลาด — วิธีนับต่างกันเล็กน้อย: Backtest นับ
+        "ชนะ" ถ้าราคาไปตามคาด ณ แท่งที่ {COMPARISON_HORIZON} พอดี ส่วน Journal นับ "ชนะ" ถ้าถึงเป้าหมายก่อนโดน stop-loss จริง
+      </p>
+      <table className="scanner-table confluence-table">
+        <thead>
+          <tr>
+            <th>ตลาด</th>
+            <th>Journal จริง (รายการที่ปิดแล้ว)</th>
+            <th>Backtest ทำนาย (@ {COMPARISON_HORIZON} แท่ง)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {markets.map((market) => {
+            const bt = backtests[market];
+            const journalStats = journalStatsForMarket(entries, states, market);
+            const btStat = bt?.data?.aggregate.find((h) => h.horizon === COMPARISON_HORIZON) ?? null;
+            return (
+              <tr key={market}>
+                <td className="mono">{MARKET_LABEL[market]}</td>
+                <td className="mono confluence-cell">
+                  {journalStats.closedCount > 0 ? (
+                    <>
+                      <span className={journalStats.winRate! >= 50 ? "pos" : "neg"}>{journalStats.winRate!.toFixed(0)}%</span>
+                      <span className={`confluence-return ${journalStats.avgReturn! >= 0 ? "pos" : "neg"}`}>{fmtSignedPct(journalStats.avgReturn!)}</span>
+                      <span className="confluence-count">
+                        n={journalStats.closedCount}
+                        {journalStats.openCount > 0 ? ` (+${journalStats.openCount} เปิดอยู่)` : ""}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="confluence-count">ยังไม่มีรายการที่ปิด{journalStats.openCount > 0 ? ` (${journalStats.openCount} เปิดอยู่)` : ""}</span>
+                  )}
+                </td>
+                <td className="mono confluence-cell">
+                  {bt?.loading ? (
+                    "กำลังโหลด..."
+                  ) : bt?.error ? (
+                    <span className="empty-state error">{bt.error}</span>
+                  ) : btStat && btStat.count > 0 ? (
+                    <>
+                      <span className={btStat.winRate >= 50 ? "pos" : "neg"}>{btStat.winRate.toFixed(0)}%</span>
+                      <span className={`confluence-return ${btStat.avgReturnPct >= 0 ? "pos" : "neg"}`}>{fmtSignedPct(btStat.avgReturnPct)}</span>
+                      <span className="confluence-count">n={btStat.count}</span>
+                    </>
+                  ) : (
+                    "-"
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -216,6 +354,7 @@ export default function JournalPanel({ entries, onDelete }: Props) {
       ) : (
         <>
           <JournalSummary entries={entries} states={states} />
+          <JournalVsBacktest entries={entries} states={states} />
           <button className="link-btn journal-refresh-btn" onClick={() => setRefreshKey((k) => k + 1)}>
             🔄 รีเฟรชสถานะทั้งหมด
           </button>

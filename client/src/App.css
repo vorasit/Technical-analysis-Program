@@ -908,6 +908,22 @@
   font-size: 13px;
 }
 
+.journal-compare {
+  margin: 4px 0 20px;
+}
+
+.journal-compare h3 {
+  font-size: 15px;
+  margin: 0 0 4px;
+  color: #f0f6fc;
+}
+
+.journal-compare-caption {
+  margin: 0 0 10px;
+  font-size: 11.5px;
+  color: #8b949e;
+}
+
 .journal-refresh-btn {
   margin-bottom: 16px;
 }
