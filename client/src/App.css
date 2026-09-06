@@ -1208,6 +1208,142 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
+/* PositionSizeCalculator */
+
+.risk-calc {
+  border-top: 1px solid #30363d;
+  margin: 10px 0 0;
+  padding-top: 10px;
+}
+
+.risk-calc-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: #c9d1d9;
+  margin-bottom: 8px;
+}
+
+.risk-calc-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.risk-calc-inputs label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11.5px;
+  color: #8b949e;
+}
+
+.risk-calc-inputs input[type="number"] {
+  background: #0d1117;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+  width: 100%;
+}
+
+.risk-calc-risk-row {
+  display: flex;
+  gap: 6px;
+}
+
+.risk-calc-risk-row input[type="number"] {
+  flex: 1;
+  min-width: 0;
+}
+
+.risk-calc-risk-row select {
+  background: #0d1117;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.risk-calc-auto {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: 11.5px;
+  color: #8b949e;
+  margin-bottom: 10px;
+}
+
+.risk-calc-auto strong {
+  color: #c9d1d9;
+  font-family: ui-monospace, Consolas, monospace;
+}
+
+.risk-calc-results {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+
+.risk-calc-result-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12.5px;
+  color: #8b949e;
+}
+
+.risk-calc-result-row strong {
+  font-family: ui-monospace, Consolas, monospace;
+  color: #f0f6fc;
+  font-size: 13px;
+}
+
+.risk-calc-warning {
+  font-size: 11.5px;
+  color: #e3b341;
+  background: #e3b34112;
+  border: 1px solid #e3b34133;
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.risk-calc-rr-highlight {
+  font-size: 13px;
+  color: #c9d1d9;
+  margin-bottom: 6px;
+}
+
+.risk-calc-rr-highlight strong {
+  color: #3fb950;
+  font-size: 15px;
+}
+
+.risk-calc-rr-highlight small {
+  color: #6e7681;
+  font-size: 10.5px;
+  margin-left: 4px;
+}
+
+.risk-calc-rr-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 11px;
+  color: #8b949e;
+  font-family: ui-monospace, Consolas, monospace;
+}
+
 /* Responsive layout */
 
 .sidebar-drawer {

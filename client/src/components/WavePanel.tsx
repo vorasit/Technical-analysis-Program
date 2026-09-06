@@ -1,5 +1,6 @@
 import { formatPrice } from "../format";
 import InfoTooltip from "./InfoTooltip";
+import PositionSizeCalculator from "./PositionSizeCalculator";
 import type { Interval, Market, NewJournalEntry, Wave2To3Tracker, WaveAnalysis, WaveCount } from "../types";
 
 function fmtPct(v: number | undefined): string {
@@ -120,6 +121,7 @@ function Wave2To3Card({ tracker, symbol, name, market, interval, deviation, last
       )}
 
       {tracker.riskReward && <RiskRewardTable plan={tracker.riskReward} />}
+      {tracker.riskReward && <PositionSizeCalculator riskReward={tracker.riskReward} />}
 
       {canLog && (
         <button className="journal-log-btn" onClick={handleLog}>
