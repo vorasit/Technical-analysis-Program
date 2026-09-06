@@ -172,3 +172,26 @@ export interface BacktestResponse {
   bySymbol: BacktestSymbolResult[];
   failures: { symbol: string; error: string }[];
 }
+
+export interface JournalTarget {
+  ratio: number;
+  price: number;
+}
+
+export interface JournalHit {
+  ratio: number;
+  price: number;
+  time: number;
+}
+
+export interface JournalStatus {
+  currentPrice: number;
+  currentTime: number;
+  returnPct: number; // vs entryPrice, direction-adjusted; frozen at the stop price once stopped out
+  stoppedOut: boolean;
+  stoppedOutTime: number | null;
+  waveInvalidated: boolean; // price crossed the Wave 0 invalidation level — the original count is wrong, independent of the trade's own stop-loss
+  waveInvalidatedTime: number | null;
+  targetsHit: JournalHit[];
+  status: "open" | "stopped" | "target_hit";
+}

@@ -1,4 +1,4 @@
-import type { AnalyzeResponse, BacktestResponse, Interval, Market, MtfEntry, ScanResult, SymbolInfo } from "./types";
+import type { AnalyzeResponse, BacktestResponse, Interval, JournalStatus, JournalTarget, Market, MtfEntry, ScanResult, SymbolInfo } from "./types";
 
 async function jsonOrThrow<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -46,4 +46,29 @@ export function getBacktest(market: Market, interval: Interval, deviation: numbe
     params.set("symbols", JSON.stringify(symbols.map((s) => ({ symbol: s.symbol, name: s.name }))));
   }
   return fetch(`/api/backtest?${params.toString()}`).then((r) => jsonOrThrow<BacktestResponse>(r));
+}
+
+export function getJournalStatus(
+  market: Market,
+  symbol: string,
+  interval: Interval,
+  direction: "up" | "down",
+  entryTime: number,
+  entryPrice: number,
+  stopLoss: number,
+  invalidationLevel: number,
+  targets: JournalTarget[]
+): Promise<JournalStatus> {
+  const params = new URLSearchParams({
+    market,
+    symbol,
+    interval,
+    direction,
+    entryTime: String(entryTime),
+    entryPrice: String(entryPrice),
+    stopLoss: String(stopLoss),
+    invalidationLevel: String(invalidationLevel),
+    targets: JSON.stringify(targets),
+  });
+  return fetch(`/api/journal/status?${params.toString()}`).then((r) => jsonOrThrow<JournalStatus>(r));
 }

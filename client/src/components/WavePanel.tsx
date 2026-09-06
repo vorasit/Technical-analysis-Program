@@ -1,5 +1,5 @@
 import { formatPrice } from "../format";
-import type { Wave2To3Tracker, WaveAnalysis, WaveCount } from "../types";
+import type { Interval, Market, NewJournalEntry, Wave2To3Tracker, WaveAnalysis, WaveCount } from "../types";
 
 function fmtPct(v: number | undefined): string {
   if (v === undefined || Number.isNaN(v)) return "-";
@@ -18,8 +18,41 @@ const PHASE_LABEL: Record<Wave2To3Tracker["phase"], string> = {
   confirmed: "Wave 3 ยืนยันแล้ว กำลังเคลื่อนไหว",
 };
 
-function Wave2To3Card({ tracker, symbol }: { tracker: Wave2To3Tracker; symbol: string }) {
+interface Wave2To3CardProps {
+  tracker: Wave2To3Tracker;
+  symbol: string;
+  name: string;
+  market: Market;
+  interval: Interval;
+  lastPrice: number;
+  lastTime: number;
+  onLogSignal: (entry: NewJournalEntry) => void;
+}
+
+function Wave2To3Card({ tracker, symbol, name, market, interval, lastPrice, lastTime, onLogSignal }: Wave2To3CardProps) {
   const barPct = Math.max(0, Math.min(100, tracker.progressPct));
+  const canLog = tracker.phase !== "none" && tracker.direction !== null && tracker.riskReward !== null && tracker.invalidationLevel !== null;
+
+  function handleLog() {
+    if (!tracker.direction || !tracker.riskReward || tracker.invalidationLevel === null) return;
+    onLogSignal({
+      symbol,
+      name,
+      market,
+      interval,
+      direction: tracker.direction,
+      entryTime: lastTime,
+      entryPrice: lastPrice,
+      stopLoss: tracker.riskReward.stopLoss,
+      invalidationLevel: tracker.invalidationLevel,
+      targets: tracker.riskReward.targets.map((t) => ({ ratio: t.ratio, price: t.price })),
+      confidence: tracker.confidence,
+      cdcConfluence: tracker.cdcConfluence,
+      divergenceConfluence: tracker.divergenceConfluence,
+      phaseAtLog: tracker.phase === "confirmed" ? "confirmed" : "watching",
+    });
+  }
+
   return (
     <div className={`wave23-card phase-${tracker.phase}`}>
       <div className="wave23-header">
@@ -79,6 +112,12 @@ function Wave2To3Card({ tracker, symbol }: { tracker: Wave2To3Tracker; symbol: s
       )}
 
       {tracker.riskReward && <RiskRewardTable plan={tracker.riskReward} />}
+
+      {canLog && (
+        <button className="journal-log-btn" onClick={handleLog}>
+          📝 บันทึกลง Journal
+        </button>
+      )}
 
       <p>{tracker.note}</p>
     </div>
@@ -168,10 +207,30 @@ function CountCard({ title, count }: { title: string; count: WaveCount }) {
   );
 }
 
-export default function WavePanel({ wave, symbol }: { wave: WaveAnalysis; symbol: string }) {
+interface WavePanelProps {
+  wave: WaveAnalysis;
+  symbol: string;
+  name: string;
+  market: Market;
+  interval: Interval;
+  lastPrice: number;
+  lastTime: number;
+  onLogSignal: (entry: NewJournalEntry) => void;
+}
+
+export default function WavePanel({ wave, symbol, name, market, interval, lastPrice, lastTime, onLogSignal }: WavePanelProps) {
   return (
     <div className="wave-panel">
-      <Wave2To3Card tracker={wave.wave2to3} symbol={symbol} />
+      <Wave2To3Card
+        tracker={wave.wave2to3}
+        symbol={symbol}
+        name={name}
+        market={market}
+        interval={interval}
+        lastPrice={lastPrice}
+        lastTime={lastTime}
+        onLogSignal={onLogSignal}
+      />
 
       {wave.bestCount ? (
         <CountCard title="Best auto wave count" count={wave.bestCount} />
