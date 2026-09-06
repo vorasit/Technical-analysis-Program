@@ -1272,4 +1272,8 @@
   .table-scroll .confluence-table {
     min-width: 480px;
   }
+
+  .table-scroll .rr-table {
+    min-width: 380px;
+  }
 }

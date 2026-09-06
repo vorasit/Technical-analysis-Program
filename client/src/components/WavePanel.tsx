@@ -144,6 +144,7 @@ function RiskRewardTable({ plan }: { plan: NonNullable<Wave2To3Tracker["riskRewa
           Stop-loss (ใต้ Wave 2): <strong>{fmtPrice(plan.stopLoss)}</strong> <small>(ความเสี่ยง {plan.riskPct.toFixed(1)}%)</small>
         </span>
       </div>
+      <div className="table-scroll">
       <table className="rr-table">
         <thead>
           <tr>
@@ -164,6 +165,7 @@ function RiskRewardTable({ plan }: { plan: NonNullable<Wave2To3Tracker["riskRewa
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
