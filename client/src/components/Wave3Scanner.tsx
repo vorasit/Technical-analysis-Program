@@ -5,6 +5,10 @@ import SymbolLogo from "./SymbolLogo";
 import type { Interval, Market, NewJournalEntry, ScanResult, SymbolInfo } from "../types";
 
 type Source = "preset" | "watchlist";
+type FilterKey = "confirmed" | "watching" | "cdc" | "divergence";
+
+const PHASE_FILTERS: FilterKey[] = ["confirmed", "watching"];
+const CONFLUENCE_FILTERS: FilterKey[] = ["cdc", "divergence"];
 
 interface Props {
   market: Market;
@@ -20,8 +24,31 @@ export default function Wave3Scanner({ market, interval, deviation, onOpenSymbol
   const [results, setResults] = useState<ScanResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeFilters, setActiveFilters] = useState<Set<FilterKey>>(new Set());
 
   const watchlistForMarket = watchlist.filter((w) => w.market === market);
+
+  function toggleFilter(key: FilterKey) {
+    setActiveFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  // Phase filters (confirmed/watching) are OR'd together — a row only ever has one
+  // phase, so requiring both would always match nothing. CDC and Divergence are
+  // independent per-row flags, so they're AND'd — selecting both surfaces only the
+  // highest-quality setups where both backtest-validated filters agree.
+  const activePhases = PHASE_FILTERS.filter((f) => activeFilters.has(f));
+  const activeConfluence = CONFLUENCE_FILTERS.filter((f) => activeFilters.has(f));
+  const filteredResults = results.filter((r) => {
+    if (activePhases.length > 0 && !activePhases.some((f) => f === r.wave2to3.phase)) return false;
+    if (activeConfluence.includes("cdc") && r.wave2to3.cdcConfluence !== true) return false;
+    if (activeConfluence.includes("divergence") && r.wave2to3.divergenceConfluence !== true) return false;
+    return true;
+  });
 
   useEffect(() => {
     if (source === "watchlist" && watchlistForMarket.length === 0) {
@@ -76,23 +103,47 @@ export default function Wave3Scanner({ market, interval, deviation, onOpenSymbol
       {!loading && !error && !(source === "watchlist" && watchlistForMarket.length === 0) && (
         <>
           <div className="scanner-legend">
-            <div className="scanner-legend-item">
+            <button
+              type="button"
+              className={`scanner-legend-item scanner-filter-chip ${activeFilters.has("confirmed") ? "active" : ""}`}
+              onClick={() => toggleFilter("confirmed")}
+            >
               <span className="badge badge-active">Wave 3 กำลังเกิด</span> ราคาทะลุแนว Wave 1 แล้ว — กำลังเคลื่อนที่เป็น Wave 3 จริง
-            </div>
-            <div className="scanner-legend-item">
+            </button>
+            <button
+              type="button"
+              className={`scanner-legend-item scanner-filter-chip ${activeFilters.has("watching") ? "active" : ""}`}
+              onClick={() => toggleFilter("watching")}
+            >
               <span className="badge badge-watching">รอทะลุ Wave 3</span> Wave 2 ปรับฐานเสร็จแล้ว รอราคาทะลุแนวเพื่อยืนยัน
-            </div>
+            </button>
             <div className="scanner-legend-item">
               <span className="badge">ยังไม่เข้าเงื่อนไข</span> ยังไม่พบรูปแบบ Wave 1-2 ที่ใช้ได้ในตอนนี้
             </div>
-            <div className="scanner-legend-item">
+            <button
+              type="button"
+              className={`scanner-legend-item scanner-filter-chip ${activeFilters.has("cdc") ? "active" : ""}`}
+              onClick={() => toggleFilter("cdc")}
+            >
               <span className="badge badge-confluence">✓ CDC ตรงกัน</span> ผลทดสอบย้อนหลังพบว่าให้ผลตอบแทนเฉลี่ยดีกว่าอย่างชัดเจน (ดูแท็บ Backtest)
-            </div>
-            <div className="scanner-legend-item">
+            </button>
+            <button
+              type="button"
+              className={`scanner-legend-item scanner-filter-chip ${activeFilters.has("divergence") ? "active" : ""}`}
+              onClick={() => toggleFilter("divergence")}
+            >
               <span className="badge badge-confluence">✓ Divergence ยืนยัน</span> RSI/MACD มี hidden divergence ที่จุด Wave 0/Wave 2 ยืนยันโมเมนตัมไปทิศทางเดียวกับคลื่น
               (ดูแท็บ Backtest)
-            </div>
+            </button>
+            {activeFilters.size > 0 && (
+              <button type="button" className="scanner-filter-clear" onClick={() => setActiveFilters(new Set())}>
+                ✕ ล้างตัวกรอง ({filteredResults.length}/{results.length})
+              </button>
+            )}
           </div>
+          {filteredResults.length === 0 ? (
+            <div className="empty-state">ไม่มีสัญลักษณ์ที่ตรงกับตัวกรองที่เลือก ลองล้างตัวกรองบางส่วนดู</div>
+          ) : (
           <table className="scanner-table">
             <thead>
               <tr>
@@ -110,7 +161,7 @@ export default function Wave3Scanner({ market, interval, deviation, onOpenSymbol
               </tr>
             </thead>
             <tbody>
-              {results.map((r) => (
+              {filteredResults.map((r) => (
                 <tr key={r.symbol} className={r.wave2to3.phase !== "none" ? `row-${r.wave2to3.phase}` : ""}>
                   <td className="mono symbol-cell">
                     <SymbolLogo symbol={r.symbol} market={r.market} size={20} />
@@ -194,6 +245,7 @@ export default function Wave3Scanner({ market, interval, deviation, onOpenSymbol
               ))}
             </tbody>
           </table>
+          )}
         </>
       )}
     </div>
