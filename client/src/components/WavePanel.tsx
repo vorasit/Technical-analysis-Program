@@ -1,4 +1,5 @@
 import { formatPrice } from "../format";
+import InfoTooltip from "./InfoTooltip";
 import type { Interval, Market, NewJournalEntry, Wave2To3Tracker, WaveAnalysis, WaveCount } from "../types";
 
 function fmtPct(v: number | undefined): string {
@@ -79,11 +80,16 @@ function Wave2To3Card({ tracker, symbol, name, market, interval, deviation, last
       )}
 
       {tracker.phase !== "none" && tracker.divergenceConfluence !== null && (
-        <div
-          className={`badge wave23-confluence ${tracker.divergenceConfluence ? "badge-confluence" : "badge-no-confluence"}`}
-          title="Hidden divergence: RSI/MACD ที่จุด Wave 0 กับ Wave 2 ชี้ว่าโมเมนตัมกำลังสะสมไปในทิศทางเดียวกับคลื่น ยืนยันว่า Wave 2 น่าจะเป็นแค่การพักฐาน ไม่ใช่การกลับตัว (ดูแท็บ Backtest)"
-        >
-          {tracker.divergenceConfluence ? "✓ RSI/MACD Divergence ยืนยัน" : "✗ ไม่มี Divergence ยืนยัน"}
+        <div className={`badge wave23-confluence ${tracker.divergenceConfluence ? "badge-confluence" : "badge-no-confluence"}`}>
+          {tracker.divergenceConfluence ? (
+            <>
+              ✓ <InfoTooltip term="RSI">RSI</InfoTooltip>/MACD <InfoTooltip term="Divergence">Divergence</InfoTooltip> ยืนยัน
+            </>
+          ) : (
+            <>
+              ✗ ไม่มี <InfoTooltip term="Divergence">Divergence</InfoTooltip> ยืนยัน
+            </>
+          )}
         </div>
       )}
 
@@ -101,7 +107,7 @@ function Wave2To3Card({ tracker, symbol, name, market, interval, deviation, last
             </span>
             {tracker.invalidationLevel !== null && (
               <span>
-                แนวยกเลิกนับ: <strong>{fmtPrice(tracker.invalidationLevel)}</strong>
+                <InfoTooltip term="Invalidation Level">แนวยกเลิกนับ</InfoTooltip>: <strong>{fmtPrice(tracker.invalidationLevel)}</strong>
               </span>
             )}
             {tracker.currentPrice !== null && (
@@ -235,6 +241,10 @@ export default function WavePanel({ wave, symbol, name, market, interval, deviat
         lastTime={lastTime}
         onLogSignal={onLogSignal}
       />
+
+      <div className="section-label">
+        การนับคลื่น <InfoTooltip term="Elliott Wave">Elliott Wave</InfoTooltip> อัตโนมัติ
+      </div>
 
       {wave.bestCount ? (
         <CountCard title="Best auto wave count" count={wave.bestCount} />

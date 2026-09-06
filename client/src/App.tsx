@@ -1,13 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import { analyze } from "./api";
 import BacktestPanel from "./components/BacktestPanel";
-import InsightPanel from "./components/InsightPanel";
 import JournalPanel from "./components/JournalPanel";
 import MtfPanel from "./components/MtfPanel";
 import PriceChart from "./components/PriceChart";
 import type { OverlayToggles } from "./components/PriceChart";
 import Sidebar from "./components/Sidebar";
+import SmartSummaryCard from "./components/SmartSummaryCard";
 import SymbolLogo from "./components/SymbolLogo";
 import WavePanel from "./components/WavePanel";
 import Wave3Scanner from "./components/Wave3Scanner";
@@ -95,6 +95,7 @@ export default function App() {
   const [watchlist, setWatchlist] = useState<SymbolInfo[]>(() => loadWatchlist(market));
   const [overlays, setOverlays] = useState<OverlayToggles>(initialSettings.overlays);
   const [journal, setJournal] = useState<JournalEntry[]>(() => loadJournal());
+  const detailsRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     saveJSON(SETTINGS_KEY, { interval, deviation, overlays });
@@ -220,6 +221,12 @@ export default function App() {
         {view === "chart" ? (
           <>
             <main className="chart-area">
+              {data && (
+                <SmartSummaryCard
+                  insight={data.insight}
+                  onViewDetails={() => detailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                />
+              )}
               <div className="chart-toolbar">
                 <span className="current-symbol">
                   <SymbolLogo symbol={selected.symbol} market={market} size={24} />
@@ -285,8 +292,7 @@ export default function App() {
                 <PriceChart data={data} overlays={overlays} />
               </div>
             </main>
-            <section className="side-panel">
-              {data && <InsightPanel insight={data.insight} />}
+            <section className="side-panel" ref={detailsRef}>
               {data && <MtfPanel market={market} symbol={selected.symbol} deviation={deviation} />}
               {data && (
                 <WavePanel
