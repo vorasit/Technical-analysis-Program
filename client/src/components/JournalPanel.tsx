@@ -9,8 +9,18 @@ interface Props {
   onDelete: (id: string) => void;
 }
 
+interface EntryState {
+  status: JournalStatus | null;
+  loading: boolean;
+  error: string | null;
+}
+
 function fmtDateTime(t: number): string {
   return new Date(t * 1000).toLocaleString();
+}
+
+function fmtSignedPct(v: number): string {
+  return `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
 }
 
 const STATUS_LABEL: Record<JournalStatus["status"], string> = {
@@ -25,41 +35,70 @@ const STATUS_BADGE_CLASS: Record<JournalStatus["status"], string> = {
   target_hit: "badge-active",
 };
 
-function EntryCard({ entry, onDelete }: { entry: JournalEntry; onDelete: (id: string) => void }) {
-  const [status, setStatus] = useState<JournalStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+function JournalSummary({ entries, states }: { entries: JournalEntry[]; states: Record<string, EntryState> }) {
+  const loaded = entries.map((e) => states[e.id]?.status).filter((s): s is JournalStatus => s !== null && s !== undefined);
+  const stillLoading = entries.some((e) => states[e.id]?.loading);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    getJournalStatus(
-      entry.market,
-      entry.symbol,
-      entry.interval,
-      entry.direction,
-      entry.entryTime,
-      entry.entryPrice,
-      entry.stopLoss,
-      entry.invalidationLevel,
-      entry.targets
-    )
-      .then((s) => {
-        if (!cancelled) setStatus(s);
-      })
-      .catch((e) => {
-        if (!cancelled) setError(e.message);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-    // entry is an immutable snapshot once logged, so its id alone is a stable key for this fetch.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entry.id]);
+  const counts = { open: 0, target_hit: 0, stopped: 0 };
+  let sumReturnAll = 0;
+  let sumReturnClosed = 0;
+  let closedCount = 0;
+
+  for (const s of loaded) {
+    counts[s.status]++;
+    sumReturnAll += s.returnPct;
+    if (s.status !== "open") {
+      sumReturnClosed += s.returnPct;
+      closedCount++;
+    }
+  }
+
+  const avgReturnAll = loaded.length > 0 ? sumReturnAll / loaded.length : null;
+  const avgReturnClosed = closedCount > 0 ? sumReturnClosed / closedCount : null;
+  const winRate = closedCount > 0 ? (counts.target_hit / closedCount) * 100 : null;
+
+  return (
+    <div className="backtest-cards">
+      <div className="backtest-card">
+        <div className="backtest-card-title">ภาพรวม ({entries.length} รายการ{stillLoading ? " — กำลังโหลด..." : ""})</div>
+        <div className="backtest-stat-row">
+          <span>เปิดอยู่</span>
+          <strong>{counts.open}</strong>
+        </div>
+        <div className="backtest-stat-row">
+          <span>ถึงเป้าหมาย</span>
+          <strong className="pos">{counts.target_hit}</strong>
+        </div>
+        <div className="backtest-stat-row">
+          <span>โดน Stop-loss</span>
+          <strong className="neg">{counts.stopped}</strong>
+        </div>
+      </div>
+      <div className="backtest-card">
+        <div className="backtest-card-title">ผลตอบแทนจริง</div>
+        <div className="backtest-stat-row">
+          <span>Win rate (เฉพาะที่ปิดแล้ว)</span>
+          <strong>{winRate !== null ? `${winRate.toFixed(0)}% (${counts.target_hit}/${closedCount})` : "-"}</strong>
+        </div>
+        <div className="backtest-stat-row">
+          <span>ผลตอบแทนเฉลี่ย (ที่ปิดแล้ว)</span>
+          <strong className={avgReturnClosed !== null ? (avgReturnClosed >= 0 ? "pos" : "neg") : ""}>
+            {avgReturnClosed !== null ? fmtSignedPct(avgReturnClosed) : "-"}
+          </strong>
+        </div>
+        <div className="backtest-stat-row">
+          <span>ผลตอบแทนเฉลี่ย (ทั้งหมด รวมที่ยังเปิดอยู่)</span>
+          <strong className={avgReturnAll !== null ? (avgReturnAll >= 0 ? "pos" : "neg") : ""}>
+            {avgReturnAll !== null ? fmtSignedPct(avgReturnAll) : "-"}
+          </strong>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EntryCard({ entry, state, onDelete }: { entry: JournalEntry; state: EntryState; onDelete: (id: string) => void }) {
+  const { status, loading, error } = state;
 
   return (
     <div className="journal-card">
@@ -98,10 +137,7 @@ function EntryCard({ entry, onDelete }: { entry: JournalEntry; onDelete: (id: st
         <>
           <div className="journal-status-row">
             <span className={`badge ${STATUS_BADGE_CLASS[status.status]}`}>{STATUS_LABEL[status.status]}</span>
-            <span className={`journal-return ${status.returnPct >= 0 ? "pos" : "neg"}`}>
-              {status.returnPct >= 0 ? "+" : ""}
-              {status.returnPct.toFixed(2)}%
-            </span>
+            <span className={`journal-return ${status.returnPct >= 0 ? "pos" : "neg"}`}>{fmtSignedPct(status.returnPct)}</span>
             {status.waveInvalidated && (
               <span
                 className="badge badge-no-confluence"
@@ -126,6 +162,44 @@ function EntryCard({ entry, onDelete }: { entry: JournalEntry; onDelete: (id: st
 }
 
 export default function JournalPanel({ entries, onDelete }: Props) {
+  const [states, setStates] = useState<Record<string, EntryState>>({});
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setStates(() => {
+      const initial: Record<string, EntryState> = {};
+      for (const e of entries) initial[e.id] = { status: null, loading: true, error: null };
+      return initial;
+    });
+
+    entries.forEach((entry) => {
+      getJournalStatus(
+        entry.market,
+        entry.symbol,
+        entry.interval,
+        entry.direction,
+        entry.entryTime,
+        entry.entryPrice,
+        entry.stopLoss,
+        entry.invalidationLevel,
+        entry.targets
+      )
+        .then((s) => {
+          if (!cancelled) setStates((prev) => ({ ...prev, [entry.id]: { status: s, loading: false, error: null } }));
+        })
+        .catch((e) => {
+          if (!cancelled) setStates((prev) => ({ ...prev, [entry.id]: { status: null, loading: false, error: e.message } }));
+        });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entries, refreshKey]);
+
   return (
     <div className="journal-panel">
       <div className="journal-header">
@@ -140,11 +214,17 @@ export default function JournalPanel({ entries, onDelete }: Props) {
           ยังไม่มีสัญญาณที่บันทึกไว้ — กดปุ่ม "📝 บันทึกลง Journal" จากแท็บกราฟหรือ Wave 3 Scanner เมื่อเจอสัญญาณที่สนใจ
         </div>
       ) : (
-        <div className="journal-list">
-          {entries.map((e) => (
-            <EntryCard key={e.id} entry={e} onDelete={onDelete} />
-          ))}
-        </div>
+        <>
+          <JournalSummary entries={entries} states={states} />
+          <button className="link-btn journal-refresh-btn" onClick={() => setRefreshKey((k) => k + 1)}>
+            🔄 รีเฟรชสถานะทั้งหมด
+          </button>
+          <div className="journal-list">
+            {entries.map((e) => (
+              <EntryCard key={e.id} entry={e} state={states[e.id] ?? { status: null, loading: true, error: null }} onDelete={onDelete} />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

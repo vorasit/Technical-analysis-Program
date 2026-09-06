@@ -908,6 +908,10 @@
   font-size: 13px;
 }
 
+.journal-refresh-btn {
+  margin-bottom: 16px;
+}
+
 .journal-list {
   display: flex;
   flex-direction: column;
