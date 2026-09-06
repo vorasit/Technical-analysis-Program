@@ -124,6 +124,13 @@ export interface WaveAnalysis {
   pivots: Pivot[];
 }
 
+export interface MtfEntry {
+  interval: Interval;
+  wave2to3?: Wave2To3Tracker;
+  lastPrice?: number;
+  error?: string;
+}
+
 export interface BacktestReturn {
   returnPct: number;
   hitInvalidation: boolean;

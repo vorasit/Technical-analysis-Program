@@ -168,6 +168,17 @@ export interface MtfEntry {
   error?: string;
 }
 
+export type InsightStatus = "BULLISH" | "NEUTRAL" | "BEARISH" | "HIGH_RISK";
+export type InsightRiskLevel = "LOW" | "MEDIUM" | "HIGH";
+
+export interface PlainLanguageInsight {
+  status: InsightStatus;
+  statusLabel: string;
+  headline: string;
+  bulletPoints: string[];
+  riskLevel: InsightRiskLevel;
+}
+
 export interface HorizonStat {
   horizon: number;
   count: number;
@@ -203,6 +214,7 @@ export interface AnalyzeResponse {
   candles: Candle[];
   indicators: Indicators;
   wave: WaveAnalysis;
+  insight: PlainLanguageInsight;
 }
 
 export interface ScanResult {
