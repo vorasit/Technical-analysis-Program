@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import { analyze } from "./api";
 import BacktestPanel from "./components/BacktestPanel";
+import InsightPanel from "./components/InsightPanel";
 import JournalPanel from "./components/JournalPanel";
 import MtfPanel from "./components/MtfPanel";
 import PriceChart from "./components/PriceChart";
@@ -285,6 +286,7 @@ export default function App() {
               </div>
             </main>
             <section className="side-panel">
+              {data && <InsightPanel insight={data.insight} />}
               {data && <MtfPanel market={market} symbol={selected.symbol} deviation={deviation} />}
               {data && (
                 <WavePanel

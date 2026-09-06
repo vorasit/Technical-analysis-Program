@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { Interval, Market } from "../types.js";
+import { Candle, Interval, Market, MtfEntry } from "../types.js";
 import { SYMBOLS } from "../services/symbols.js";
 import { getCandles } from "../services/marketData.js";
 import { sma, ema, rsi, macd, bollinger, cdcActionZone } from "../services/indicators.js";
@@ -8,6 +8,7 @@ import { mapLimit } from "../services/concurrency.js";
 import { searchSymbols } from "../services/search.js";
 import { computeHorizonStats, findBacktestSignals } from "../services/backtest.js";
 import { computeJournalStatus } from "../services/journal.js";
+import { generatePlainLanguageInsight } from "../services/insight.js";
 import { BacktestSignal, BacktestSymbolResult, JournalTarget } from "../types.js";
 
 const router = Router();
@@ -48,6 +49,28 @@ router.get("/search", async (req, res) => {
   }
 });
 
+const MTF_INTERVALS: Interval[] = ["1h", "1d", "1w"];
+
+/**
+ * Builds the wave setup on each of the standard timeframes, for MTF agreement
+ * checks. `known` lets a caller that already fetched one of these intervals'
+ * candles (e.g. /analyze) skip re-fetching it.
+ */
+async function fetchMtfEntries(market: Market, symbol: string, deviation: number, known?: { interval: Interval; candles: Candle[] }): Promise<MtfEntry[]> {
+  return Promise.all(
+    MTF_INTERVALS.map(async (interval): Promise<MtfEntry> => {
+      try {
+        const candles = known && known.interval === interval ? known.candles : await getCandles(market, symbol, interval);
+        if (candles.length < 20) return { interval, error: "Not enough data." };
+        const wave = analyzeWaves(candles, deviation);
+        return { interval, wave2to3: wave.wave2to3, lastPrice: candles[candles.length - 1].close };
+      } catch (err) {
+        return { interval, error: err instanceof Error ? err.message : "Failed to fetch data." };
+      }
+    })
+  );
+}
+
 router.get("/analyze", async (req, res) => {
   const market = parseMarket(req.query.market);
   const interval = parseInterval(req.query.interval) ?? "1d";
@@ -64,6 +87,8 @@ router.get("/analyze", async (req, res) => {
       return res.status(422).json({ error: "Not enough data returned for this symbol/interval." });
     }
     const wave = analyzeWaves(candles, deviation);
+    const mtf = await fetchMtfEntries(market, symbol, deviation, { interval, candles });
+    const insight = generatePlainLanguageInsight({ wave2to3: wave.wave2to3, mtf });
     res.json({
       symbol,
       market,
@@ -80,6 +105,7 @@ router.get("/analyze", async (req, res) => {
         cdc: cdcActionZone(candles),
       },
       wave,
+      insight,
     });
   } catch (err) {
     res.status(502).json({ error: err instanceof Error ? err.message : "Failed to fetch or analyze data." });
@@ -109,20 +135,7 @@ router.get("/mtf", async (req, res) => {
     return res.status(400).json({ error: "market and symbol are required." });
   }
 
-  const intervals: Interval[] = ["1h", "1d", "1w"];
-  const results = await Promise.all(
-    intervals.map(async (interval) => {
-      try {
-        const candles = await getCandles(market, symbol, interval);
-        if (candles.length < 20) return { interval, error: "Not enough data." };
-        const wave = analyzeWaves(candles, deviation);
-        return { interval, wave2to3: wave.wave2to3, lastPrice: candles[candles.length - 1].close };
-      } catch (err) {
-        return { interval, error: err instanceof Error ? err.message : "Failed to fetch data." };
-      }
-    })
-  );
-
+  const results = await fetchMtfEntries(market, symbol, deviation);
   res.json(results);
 });
 
