@@ -122,6 +122,7 @@ export default function BacktestPanel({ market, interval, deviation, watchlist }
               — ถ้าตัวเลขฝั่ง "เห็นตรงกัน" ดีกว่าฝั่ง "ไม่ตรงกัน" อย่างสม่ำเสมอ แปลว่าการกรองด้วย CDC ช่วยคัดสัญญาณคุณภาพสูงขึ้นได้จริง
             </p>
           </div>
+          <div className="table-scroll">
           <table className="scanner-table confluence-table">
             <thead>
               <tr>
@@ -157,6 +158,7 @@ export default function BacktestPanel({ market, interval, deviation, watchlist }
               })}
             </tbody>
           </table>
+          </div>
 
           <div className="scanner-header">
             <h2 className="backtest-subheading">เทียบผลเมื่อกรองด้วย RSI/MACD Divergence</h2>
@@ -165,6 +167,7 @@ export default function BacktestPanel({ market, interval, deviation, watchlist }
               higher-low/lower-high แต่ indicator กลับต่ำ/สูงกว่าเดิม) — ถ้าฝั่ง "มี Divergence" ให้ผลดีกว่าฝั่ง "ไม่มี" อย่างสม่ำเสมอ แปลว่าใช้กรองสัญญาณคุณภาพสูงขึ้นได้จริง
             </p>
           </div>
+          <div className="table-scroll">
           <table className="scanner-table confluence-table">
             <thead>
               <tr>
@@ -200,11 +203,13 @@ export default function BacktestPanel({ market, interval, deviation, watchlist }
               })}
             </tbody>
           </table>
+          </div>
 
           <div className="scanner-header">
             <h2 className="backtest-subheading">เมื่อ CDC และ Divergence ยืนยันตรงกันทั้งคู่</h2>
             <p>ถ้าต้องรอสัญญาณที่ทั้ง CDC Action Zone และ RSI/MACD Divergence เห็นตรงกัน จะได้จำนวนสัญญาณน้อยลง แต่คุณภาพควรสูงขึ้นถ้าตัวกรองทั้งสองมีค่าจริง</p>
           </div>
+          <div className="table-scroll">
           <table className="scanner-table confluence-table">
             <thead>
               <tr>
@@ -238,8 +243,10 @@ export default function BacktestPanel({ market, interval, deviation, watchlist }
               })}
             </tbody>
           </table>
+          </div>
 
           <h2 className="backtest-subheading">รายละเอียดต่อสัญลักษณ์ (ทุกสัญญาณ)</h2>
+          <div className="table-scroll">
           <table className="scanner-table">
             <thead>
               <tr>
@@ -270,6 +277,7 @@ export default function BacktestPanel({ market, interval, deviation, watchlist }
               ))}
             </tbody>
           </table>
+          </div>
 
           {data.failures.length > 0 && (
             <div className="empty-state">ข้อมูลไม่พอสำหรับ: {data.failures.map((f) => f.symbol).join(", ")}</div>

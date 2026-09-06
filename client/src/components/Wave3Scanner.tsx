@@ -144,6 +144,7 @@ export default function Wave3Scanner({ market, interval, deviation, onOpenSymbol
           {filteredResults.length === 0 ? (
             <div className="empty-state">ไม่มีสัญลักษณ์ที่ตรงกับตัวกรองที่เลือก ลองล้างตัวกรองบางส่วนดู</div>
           ) : (
+          <div className="table-scroll">
           <table className="scanner-table">
             <thead>
               <tr>
@@ -245,6 +246,7 @@ export default function Wave3Scanner({ market, interval, deviation, onOpenSymbol
               ))}
             </tbody>
           </table>
+          </div>
           )}
         </>
       )}

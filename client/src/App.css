@@ -797,6 +797,11 @@
   gap: 6px;
 }
 
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .scanner-table {
   width: 100%;
   border-collapse: collapse;
@@ -1254,5 +1259,17 @@
     border-top: 1px solid #30363d;
     overflow-y: visible;
     max-height: none;
+  }
+
+  .scanner {
+    padding: 12px;
+  }
+
+  .table-scroll .scanner-table {
+    min-width: 640px;
+  }
+
+  .table-scroll .confluence-table {
+    min-width: 480px;
   }
 }
