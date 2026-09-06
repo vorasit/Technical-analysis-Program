@@ -569,6 +569,11 @@
   color: #ff938d;
 }
 
+.wave-chip-letter {
+  background: #e0455b33;
+  color: #ff8fa3;
+}
+
 .fib-row {
   display: flex;
   flex-direction: column;
