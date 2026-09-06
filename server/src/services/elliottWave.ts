@@ -143,7 +143,36 @@ function scoreImpulse(p: [Pivot, Pivot, Pivot, Pivot, Pivot, Pivot], isUp: boole
   };
 }
 
-function toWaveCount(p: [Pivot, Pivot, Pivot, Pivot, Pivot, Pivot], scored: ScoredImpulse): WaveCount {
+/**
+ * Appends the A-B-C correction that follows a validated 1-5 impulse, when the
+ * next 3 pivots needed to complete it are already there. Corrective structure
+ * doesn't get the same hard-rule treatment as the impulse (see buildWaveChain
+ * above for why) — it's attached unconditionally, the same way the Wave Map
+ * does, so the "best" and "alternate" counts read as complete as the chart's
+ * Wave Map overlay instead of stopping at Wave 5.
+ */
+function appendCorrective(points: WavePoint[], fib: Record<string, number>, wave5: Pivot, corrective: [Pivot, Pivot, Pivot] | null, wave4: Pivot): void {
+  if (!corrective) return;
+  const [a, b, c] = corrective;
+
+  const lenWave5 = Math.abs(wave5.price - wave4.price);
+  const lenA = Math.abs(a.price - wave5.price);
+  const lenB = Math.abs(b.price - a.price);
+  const lenC = Math.abs(c.price - b.price);
+
+  if (lenWave5 > 0) fib.waveARetrace = lenA / lenWave5;
+  if (lenA > 0) {
+    fib.waveBRetrace = lenB / lenA;
+    fib.waveCExtension = lenC / lenA;
+  }
+
+  (["A", "B", "C"] as const).forEach((label, i) => {
+    const pivot = corrective[i];
+    points.push({ label, time: pivot.time, price: pivot.price, index: pivot.index });
+  });
+}
+
+function toWaveCount(p: Six, scored: ScoredImpulse, corrective: [Pivot, Pivot, Pivot] | null): WaveCount {
   const labels: WavePoint["label"][] = ["0", "1", "2", "3", "4", "5"];
   const points: WavePoint[] = p.map((pivot, i) => ({
     label: labels[i],
@@ -151,12 +180,14 @@ function toWaveCount(p: [Pivot, Pivot, Pivot, Pivot, Pivot, Pivot], scored: Scor
     price: pivot.price,
     index: pivot.index,
   }));
+  const fib = { ...scored.fib };
+  appendCorrective(points, fib, p[5], corrective, p[4]);
   return {
     points,
     confidence: Math.round(scored.score),
     rulesPassed: scored.rulesPassed,
     rulesFailed: scored.rulesFailed,
-    fib: scored.fib,
+    fib,
     degree: "auto",
   };
 }
@@ -164,13 +195,15 @@ function toWaveCount(p: [Pivot, Pivot, Pivot, Pivot, Pivot, Pivot], scored: Scor
 function findImpulseCandidates(pivots: Pivot[]): WaveCount[] {
   const candidates: WaveCount[] = [];
   for (let i = 0; i + 5 < pivots.length; i++) {
-    const window = pivots.slice(i, i + 6) as [Pivot, Pivot, Pivot, Pivot, Pivot, Pivot];
+    const window = pivots.slice(i, i + 6) as Six;
     const isUp = window[0].type === "low";
     const alternatesCorrectly = window.every((pt, idx) => (idx % 2 === 0 ? pt.type === window[0].type : pt.type !== window[0].type));
     if (!alternatesCorrectly) continue;
     const scored = scoreImpulse(window, isUp);
     if (scored) {
-      candidates.push(toWaveCount(window, scored));
+      // Same lookahead buildWaveChain uses to know a full A-B-C is available past Wave 5.
+      const corrective = i + 8 < pivots.length ? (pivots.slice(i + 6, i + 9) as [Pivot, Pivot, Pivot]) : null;
+      candidates.push(toWaveCount(window, scored, corrective));
     }
   }
   candidates.sort((a, b) => {

@@ -240,13 +240,16 @@ export default function PriceChart({ data, overlays }: Props) {
     const best = data.wave.bestCount;
     if (best) {
       s.waveLine.setData(best.points.map((p) => ({ time: p.time as UTCTimestamp, value: p.price })));
-      const markers: SeriesMarker<Time>[] = best.points.map((p) => ({
-        time: p.time as UTCTimestamp,
-        position: p.label === "1" || p.label === "3" || p.label === "5" || p.label === "B" ? "aboveBar" : "belowBar",
-        color: p.label === "3" ? "#ff5f5f" : WAVE_COLOR,
-        shape: "circle",
-        text: p.label,
-      }));
+      const markers: SeriesMarker<Time>[] = best.points.map((p) => {
+        const isCorrective = p.label === "A" || p.label === "B" || p.label === "C";
+        return {
+          time: p.time as UTCTimestamp,
+          position: p.label === "1" || p.label === "3" || p.label === "5" || p.label === "B" ? "aboveBar" : "belowBar",
+          color: p.label === "3" ? "#ff5f5f" : isCorrective ? CHAIN_LETTER_COLOR : WAVE_COLOR,
+          shape: "circle",
+          text: p.label,
+        };
+      });
       markersRef.current?.setMarkers(markers);
     } else {
       s.waveLine.setData([]);

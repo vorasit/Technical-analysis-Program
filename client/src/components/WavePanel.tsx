@@ -131,17 +131,27 @@ function CountCard({ title, count }: { title: string; count: WaveCount }) {
         </span>
       </div>
       <div className="wave-points-row">
-        {count.points.map((p) => (
-          <span key={p.label} className={`wave-chip ${p.label === "3" ? "wave-chip-3" : ""}`}>
-            {p.label}
-            <small>{fmtDate(p.time)}</small>
-          </span>
-        ))}
+        {count.points.map((p) => {
+          const isCorrective = p.label === "A" || p.label === "B" || p.label === "C";
+          return (
+            <span key={p.label} className={`wave-chip ${p.label === "3" ? "wave-chip-3" : ""} ${isCorrective ? "wave-chip-letter" : ""}`}>
+              {p.label}
+              <small>{fmtDate(p.time)}</small>
+            </span>
+          );
+        })}
       </div>
       <div className="fib-row">
         <span>Wave2 retrace: {fmtPct(count.fib.wave2Retrace)}</span>
         <span>Wave3 extension: {count.fib.wave3Extension ? `${count.fib.wave3Extension.toFixed(2)}x` : "-"}</span>
         <span>Wave4 retrace: {fmtPct(count.fib.wave4Retrace)}</span>
+        {count.fib.waveARetrace !== undefined && (
+          <>
+            <span>Wave A retrace (ของ Wave 5): {fmtPct(count.fib.waveARetrace)}</span>
+            <span>Wave B retrace (ของ Wave A): {fmtPct(count.fib.waveBRetrace)}</span>
+            <span>Wave C extension (ของ Wave A): {count.fib.waveCExtension ? `${count.fib.waveCExtension.toFixed(2)}x` : "-"}</span>
+          </>
+        )}
       </div>
       <details>
         <summary>Rules ({count.rulesPassed.length} passed{count.rulesFailed.length ? `, ${count.rulesFailed.length} failed` : ""})</summary>
