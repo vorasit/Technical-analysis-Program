@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import { analyze } from "./api";
 import BacktestPanel from "./components/BacktestPanel";
+import JournalPanel from "./components/JournalPanel";
 import MtfPanel from "./components/MtfPanel";
 import PriceChart from "./components/PriceChart";
 import type { OverlayToggles } from "./components/PriceChart";
@@ -10,7 +11,7 @@ import SymbolLogo from "./components/SymbolLogo";
 import WavePanel from "./components/WavePanel";
 import Wave3Scanner from "./components/Wave3Scanner";
 import { loadJSON, saveJSON } from "./storage";
-import type { AnalyzeResponse, Interval, Market, SymbolInfo } from "./types";
+import type { AnalyzeResponse, Interval, JournalEntry, Market, NewJournalEntry, SymbolInfo } from "./types";
 
 const DEFAULT_SYMBOL: Record<Market, SymbolInfo> = {
   stock: { symbol: "AAPL", name: "Apple Inc.", market: "stock" },
@@ -22,6 +23,7 @@ const DEFAULT_SYMBOL: Record<Market, SymbolInfo> = {
 const RECENT_KEY_PREFIX = "ta-recent-symbols:";
 const WATCHLIST_KEY_PREFIX = "ta-watchlist:";
 const SETTINGS_KEY = "ta-settings";
+const JOURNAL_KEY = "ta-journal";
 const MAX_RECENTS = 8;
 
 function loadRecents(market: Market): SymbolInfo[] {
@@ -38,6 +40,14 @@ function loadWatchlist(market: Market): SymbolInfo[] {
 
 function saveWatchlist(market: Market, list: SymbolInfo[]) {
   saveJSON(WATCHLIST_KEY_PREFIX + market, list);
+}
+
+function loadJournal(): JournalEntry[] {
+  return loadJSON<JournalEntry[]>(JOURNAL_KEY, []);
+}
+
+function saveJournal(list: JournalEntry[]) {
+  saveJSON(JOURNAL_KEY, list);
 }
 
 interface PersistedSettings {
@@ -68,7 +78,7 @@ function loadSettings(): PersistedSettings {
   };
 }
 
-type View = "chart" | "scanner" | "backtest";
+type View = "chart" | "scanner" | "backtest" | "journal";
 
 export default function App() {
   const [view, setView] = useState<View>("chart");
@@ -83,6 +93,7 @@ export default function App() {
   const [recents, setRecents] = useState<SymbolInfo[]>(() => loadRecents(market));
   const [watchlist, setWatchlist] = useState<SymbolInfo[]>(() => loadWatchlist(market));
   const [overlays, setOverlays] = useState<OverlayToggles>(initialSettings.overlays);
+  const [journal, setJournal] = useState<JournalEntry[]>(() => loadJournal());
 
   useEffect(() => {
     saveJSON(SETTINGS_KEY, { interval, deviation, overlays });
@@ -138,6 +149,23 @@ export default function App() {
     });
   }
 
+  function handleLogSignal(entry: NewJournalEntry) {
+    setJournal((prev) => {
+      const id = `${entry.symbol}-${entry.entryTime}-${Date.now()}`;
+      const next = [{ ...entry, id, loggedAt: Math.floor(Date.now() / 1000) }, ...prev];
+      saveJournal(next);
+      return next;
+    });
+  }
+
+  function handleDeleteJournalEntry(id: string) {
+    setJournal((prev) => {
+      const next = prev.filter((e) => e.id !== id);
+      saveJournal(next);
+      return next;
+    });
+  }
+
   return (
     <div className="app">
       <header className="topbar">
@@ -151,6 +179,9 @@ export default function App() {
           </button>
           <button className={view === "backtest" ? "active" : ""} onClick={() => setView("backtest")}>
             Backtest
+          </button>
+          <button className={view === "journal" ? "active" : ""} onClick={() => setView("journal")}>
+            Journal{journal.length > 0 ? ` (${journal.length})` : ""}
           </button>
         </nav>
         <div className="topbar-controls">
@@ -255,7 +286,18 @@ export default function App() {
             </main>
             <section className="side-panel">
               {data && <MtfPanel market={market} symbol={selected.symbol} deviation={deviation} />}
-              {data && <WavePanel wave={data.wave} symbol={data.symbol} />}
+              {data && (
+                <WavePanel
+                  wave={data.wave}
+                  symbol={data.symbol}
+                  name={selected.name}
+                  market={market}
+                  interval={interval}
+                  lastPrice={data.candles[data.candles.length - 1]?.close ?? 0}
+                  lastTime={data.candles[data.candles.length - 1]?.time ?? 0}
+                  onLogSignal={handleLogSignal}
+                />
+              )}
             </section>
           </>
         ) : view === "scanner" ? (
@@ -266,11 +308,16 @@ export default function App() {
               deviation={deviation}
               onOpenSymbol={handleOpenFromScanner}
               watchlist={watchlist}
+              onLogSignal={handleLogSignal}
             />
+          </main>
+        ) : view === "backtest" ? (
+          <main className="chart-area">
+            <BacktestPanel market={market} interval={interval} deviation={deviation} watchlist={watchlist} />
           </main>
         ) : (
           <main className="chart-area">
-            <BacktestPanel market={market} interval={interval} deviation={deviation} watchlist={watchlist} />
+            <JournalPanel entries={journal} onDelete={handleDeleteJournalEntry} />
           </main>
         )}
       </div>

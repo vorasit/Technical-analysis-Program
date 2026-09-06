@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { scanWave3 } from "../api";
 import { formatPrice } from "../format";
 import SymbolLogo from "./SymbolLogo";
-import type { Interval, Market, ScanResult, SymbolInfo } from "../types";
+import type { Interval, Market, NewJournalEntry, ScanResult, SymbolInfo } from "../types";
 
 type Source = "preset" | "watchlist";
 
@@ -12,9 +12,10 @@ interface Props {
   deviation: number;
   onOpenSymbol: (symbol: string) => void;
   watchlist: SymbolInfo[];
+  onLogSignal: (entry: NewJournalEntry) => void;
 }
 
-export default function Wave3Scanner({ market, interval, deviation, onOpenSymbol, watchlist }: Props) {
+export default function Wave3Scanner({ market, interval, deviation, onOpenSymbol, watchlist, onLogSignal }: Props) {
   const [source, setSource] = useState<Source>("preset");
   const [results, setResults] = useState<ScanResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -157,10 +158,36 @@ export default function Wave3Scanner({ market, interval, deviation, onOpenSymbol
                       return target ? `${target.riskRewardRatio.toFixed(2)}:1` : "-";
                     })()}
                   </td>
-                  <td>
+                  <td className="scanner-actions">
                     <button className="link-btn" onClick={() => onOpenSymbol(r.symbol)}>
                       ดูกราฟ
                     </button>
+                    {r.wave2to3.phase !== "none" && r.wave2to3.direction && r.wave2to3.riskReward && r.wave2to3.invalidationLevel !== null && (
+                      <button
+                        className="link-btn"
+                        title="บันทึกสัญญาณนี้ลง Journal เพื่อติดตามผลจริง"
+                        onClick={() =>
+                          onLogSignal({
+                            symbol: r.symbol,
+                            name: r.name,
+                            market: r.market,
+                            interval,
+                            direction: r.wave2to3.direction!,
+                            entryTime: r.lastTime,
+                            entryPrice: r.lastPrice,
+                            stopLoss: r.wave2to3.riskReward!.stopLoss,
+                            invalidationLevel: r.wave2to3.invalidationLevel!,
+                            targets: r.wave2to3.riskReward!.targets.map((t) => ({ ratio: t.ratio, price: t.price })),
+                            confidence: r.wave2to3.confidence,
+                            cdcConfluence: r.wave2to3.cdcConfluence,
+                            divergenceConfluence: r.wave2to3.divergenceConfluence,
+                            phaseAtLog: r.wave2to3.phase === "confirmed" ? "confirmed" : "watching",
+                          })
+                        }
+                      >
+                        📝
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

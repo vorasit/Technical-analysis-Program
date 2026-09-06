@@ -7,7 +7,8 @@ import { analyzeWaves } from "../services/elliottWave.js";
 import { mapLimit } from "../services/concurrency.js";
 import { searchSymbols } from "../services/search.js";
 import { computeHorizonStats, findBacktestSignals } from "../services/backtest.js";
-import { BacktestSignal, BacktestSymbolResult } from "../types.js";
+import { computeJournalStatus } from "../services/journal.js";
+import { BacktestSignal, BacktestSymbolResult, JournalTarget } from "../types.js";
 
 const router = Router();
 
@@ -228,6 +229,49 @@ router.get("/scan/wave3", async (req, res) => {
   });
 
   res.json(scanned);
+});
+
+function parseTargets(raw: unknown): JournalTarget[] | null {
+  if (typeof raw !== "string") return null;
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return null;
+    return parsed.filter(
+      (t): t is JournalTarget => typeof t === "object" && t !== null && typeof (t as JournalTarget).ratio === "number" && typeof (t as JournalTarget).price === "number"
+    );
+  } catch {
+    return null;
+  }
+}
+
+router.get("/journal/status", async (req, res) => {
+  const market = parseMarket(req.query.market);
+  const interval = parseInterval(req.query.interval) ?? "1d";
+  const symbol = typeof req.query.symbol === "string" ? req.query.symbol : null;
+  const direction = req.query.direction === "up" || req.query.direction === "down" ? req.query.direction : null;
+  const entryTime = req.query.entryTime ? Number(req.query.entryTime) : NaN;
+  const entryPrice = req.query.entryPrice ? Number(req.query.entryPrice) : NaN;
+  const stopLoss = req.query.stopLoss ? Number(req.query.stopLoss) : NaN;
+  const invalidationLevel = req.query.invalidationLevel ? Number(req.query.invalidationLevel) : NaN;
+  const targets = parseTargets(req.query.targets);
+
+  if (!market || !symbol || !direction || !targets || [entryTime, entryPrice, stopLoss, invalidationLevel].some((n) => Number.isNaN(n))) {
+    return res.status(400).json({
+      error: "market, symbol, direction, entryTime, entryPrice, stopLoss, invalidationLevel, and targets are required.",
+    });
+  }
+
+  try {
+    const fetchLimit = market === "crypto" ? 1000 : 400;
+    const candles = await getCandles(market, symbol, interval, fetchLimit);
+    const status = computeJournalStatus(candles, direction, entryTime, entryPrice, stopLoss, invalidationLevel, targets);
+    if (!status) {
+      return res.status(422).json({ error: "No candle data available since the signal was logged yet." });
+    }
+    res.json(status);
+  } catch (err) {
+    res.status(502).json({ error: err instanceof Error ? err.message : "Failed to compute journal status." });
+  }
 });
 
 export default router;

@@ -215,3 +215,48 @@ export interface ScanResult {
   wave2to3: Wave2To3Tracker;
   bestCount: WaveCount | null;
 }
+
+export interface JournalTarget {
+  ratio: number;
+  price: number;
+}
+
+export interface JournalHit {
+  ratio: number;
+  price: number;
+  time: number;
+}
+
+export interface JournalStatus {
+  currentPrice: number;
+  currentTime: number;
+  returnPct: number;
+  stoppedOut: boolean;
+  stoppedOutTime: number | null;
+  waveInvalidated: boolean;
+  waveInvalidatedTime: number | null;
+  targetsHit: JournalHit[];
+  status: "open" | "stopped" | "target_hit";
+}
+
+/** A Wave 3 setup the user chose to log, snapshotted at the moment it was flagged. */
+export interface JournalEntry {
+  id: string;
+  symbol: string;
+  name: string;
+  market: Market;
+  interval: Interval;
+  direction: "up" | "down";
+  loggedAt: number; // unix seconds, when the entry was added to the journal
+  entryTime: number; // time of the last candle at logging — where the server starts scanning forward from
+  entryPrice: number; // last close at logging
+  stopLoss: number;
+  invalidationLevel: number;
+  targets: JournalTarget[];
+  confidence: number;
+  cdcConfluence: boolean | null;
+  divergenceConfluence: boolean | null;
+  phaseAtLog: "watching" | "confirmed";
+}
+
+export type NewJournalEntry = Omit<JournalEntry, "id" | "loggedAt">;
