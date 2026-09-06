@@ -181,6 +181,7 @@ function JournalVsBacktest({ entries, states }: { entries: JournalEntry[]; state
         เทียบที่ระยะ {COMPARISON_HORIZON} แท่งเทียนหลังสัญญาณ โดยใช้ Timeframe/ความไว Zigzag ล่าสุดที่บันทึกไว้ของแต่ละตลาด — วิธีนับต่างกันเล็กน้อย: Backtest นับ
         "ชนะ" ถ้าราคาไปตามคาด ณ แท่งที่ {COMPARISON_HORIZON} พอดี ส่วน Journal นับ "ชนะ" ถ้าถึงเป้าหมายก่อนโดน stop-loss จริง
       </p>
+      <div className="table-scroll">
       <table className="scanner-table confluence-table">
         <thead>
           <tr>
@@ -231,6 +232,7 @@ function JournalVsBacktest({ entries, states }: { entries: JournalEntry[]; state
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
