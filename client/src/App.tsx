@@ -12,7 +12,7 @@ import SymbolLogo from "./components/SymbolLogo";
 import WavePanel from "./components/WavePanel";
 import Wave3Scanner from "./components/Wave3Scanner";
 import { loadJSON, saveJSON } from "./storage";
-import type { AnalyzeResponse, Interval, JournalEntry, Market, NewJournalEntry, SymbolInfo } from "./types";
+import type { AnalyzeResponse, HistoryRange, Interval, JournalEntry, Market, NewJournalEntry, SymbolInfo } from "./types";
 
 const DEFAULT_SYMBOL: Record<Market, SymbolInfo> = {
   stock: { symbol: "AAPL", name: "Apple Inc.", market: "stock" },
@@ -61,6 +61,7 @@ function saveJournal(list: JournalEntry[]) {
 interface PersistedSettings {
   interval: Interval;
   deviation: number;
+  history: HistoryRange;
   overlays: OverlayToggles;
 }
 
@@ -82,6 +83,7 @@ function loadSettings(): PersistedSettings {
   return {
     interval: loaded.interval ?? "1d",
     deviation: loaded.deviation ?? 3,
+    history: loaded.history ?? "recent",
     overlays: { ...DEFAULT_OVERLAYS, ...loaded.overlays },
   };
 }
@@ -95,6 +97,7 @@ export default function App() {
   const [initialSettings] = useState(loadSettings);
   const [interval, setInterval_] = useState<Interval>(initialSettings.interval);
   const [deviation, setDeviation] = useState(initialSettings.deviation);
+  const [history, setHistory] = useState<HistoryRange>(initialSettings.history);
   const [data, setData] = useState<AnalyzeResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,8 +110,8 @@ export default function App() {
   const detailsRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    saveJSON(SETTINGS_KEY, { interval, deviation, overlays });
-  }, [interval, deviation, overlays]);
+    saveJSON(SETTINGS_KEY, { interval, deviation, history, overlays });
+  }, [interval, deviation, history, overlays]);
 
   useEffect(() => {
     saveJSON(VIEW_MODE_KEY, viewMode);
@@ -127,7 +130,7 @@ export default function App() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    analyze(market, selected.symbol, interval, deviation)
+    analyze(market, selected.symbol, interval, deviation, history)
       .then((d) => {
         if (cancelled) return;
         setData(d);
@@ -150,7 +153,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [market, selected, interval, deviation]);
+  }, [market, selected, interval, deviation, history]);
 
   function handleMarketChange(m: Market) {
     setMarket(m);
@@ -231,6 +234,7 @@ export default function App() {
               <option value="1h">1H</option>
               <option value="1d">1D</option>
               <option value="1w">1W</option>
+              <option value="1mo">1M</option>
             </select>
           </label>
           <label>
@@ -282,6 +286,28 @@ export default function App() {
                     {watchlist.some((w) => w.symbol.toUpperCase() === selected.symbol.toUpperCase()) ? "★" : "☆"}
                   </button>
                 </span>
+                <div className="history-control">
+                  <div
+                    className="history-toggle"
+                    role="group"
+                    aria-label="ช่วงข้อมูลบนกราฟ"
+                    title="ย้อนหลังทั้งหมด = ราคาตั้งแต่วันแรกที่มีข้อมูล (1H ได้สูงสุดราว 2 ปีตามข้อจำกัดของแหล่งข้อมูล) — การวิเคราะห์คลื่นยังคำนวณจากช่วงล่าสุดเหมือนเดิม"
+                  >
+                    <button className={history === "recent" ? "active" : ""} onClick={() => setHistory("recent")}>
+                      ล่าสุด
+                    </button>
+                    <button className={history === "all" ? "active" : ""} onClick={() => setHistory("all")}>
+                      📜 ย้อนหลังทั้งหมด
+                    </button>
+                  </div>
+                  {data?.history === "all" && data.candles.length > 0 && (
+                    <span className="history-span">
+                      ตั้งแต่{" "}
+                      {new Date(data.candles[0].time * 1000).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })} ·{" "}
+                      {data.candles.length.toLocaleString()} แท่ง
+                    </span>
+                  )}
+                </div>
                 {viewMode === "pro" && (
                   <div className="overlay-toggles">
                     {(
@@ -332,7 +358,9 @@ export default function App() {
                 </div>
               )}
               <div className="chart-container">
-                {loading && <div className="overlay-message">กำลังโหลดข้อมูล...</div>}
+                {loading && (
+                  <div className="overlay-message">{history === "all" ? "กำลังโหลดราคาย้อนหลังทั้งหมด..." : "กำลังโหลดข้อมูล..."}</div>
+                )}
                 {error && <div className="overlay-message error">{error}</div>}
                 <PriceChart data={data} overlays={effectiveOverlays} simpleMode={viewMode === "simple"} />
               </div>

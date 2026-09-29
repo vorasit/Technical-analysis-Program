@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import {
   CandlestickSeries,
   ColorType,
@@ -9,6 +9,7 @@ import {
 } from "lightweight-charts";
 import type { IChartApi, IPriceLine, ISeriesApi, ISeriesMarkersPluginApi, SeriesMarker, Time, UTCTimestamp } from "lightweight-charts";
 import { pricePrecision } from "../format";
+import { computeIndicators } from "../indicators";
 import type { AnalyzeResponse, WaveChainPoint } from "../types";
 
 export interface OverlayToggles {
@@ -31,6 +32,7 @@ interface Props {
   simpleMode?: boolean;
 }
 
+const DEFAULT_BAR_SPACING = 6;
 const WAVE_COLOR = "#f5c451";
 const CDC_COLORS: Record<"green" | "blue" | "red" | "yellow", string> = {
   green: "#00c853",
@@ -107,7 +109,8 @@ export default function PriceChart({ data, overlays, simpleMode }: Props) {
         horzLines: { color: "#1c212b" },
       },
       rightPriceScale: { borderColor: "#30363d" },
-      timeScale: { borderColor: "#30363d", timeVisible: true },
+      // The default 0.5px floor can't fit decades of daily bars on screen (~25k for ^GSPC).
+      timeScale: { borderColor: "#30363d", timeVisible: true, barSpacing: DEFAULT_BAR_SPACING, minBarSpacing: 0.001 },
       crosshair: { mode: 0 },
     });
 
@@ -201,9 +204,11 @@ export default function PriceChart({ data, overlays, simpleMode }: Props) {
     };
   }, []);
 
+  const indicators = useMemo(() => (data ? computeIndicators(data.candles) : null), [data]);
+
   useEffect(() => {
     const s = seriesRef.current;
-    if (!s || !data) return;
+    if (!s || !data || !indicators) return;
 
     const priceFormat = { type: "price" as const, ...pickPriceFormat(data.candles.map((c) => c.close)) };
     for (const line of [s.sma20, s.sma50, s.ema12, s.ema26, s.bbUpper, s.bbMiddle, s.bbLower, s.waveLine]) {
@@ -221,18 +226,18 @@ export default function PriceChart({ data, overlays, simpleMode }: Props) {
         color: c.close >= c.open ? "#26a69a55" : "#ef535055",
       }))
     );
-    s.sma20.setData(data.indicators.sma20.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })));
-    s.sma50.setData(data.indicators.sma50.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })));
-    s.ema12.setData(data.indicators.ema12.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })));
-    s.ema26.setData(data.indicators.ema26.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })));
-    s.bbUpper.setData(data.indicators.bollinger.map((p) => ({ time: p.time as UTCTimestamp, value: p.upper })));
-    s.bbMiddle.setData(data.indicators.bollinger.map((p) => ({ time: p.time as UTCTimestamp, value: p.middle })));
-    s.bbLower.setData(data.indicators.bollinger.map((p) => ({ time: p.time as UTCTimestamp, value: p.lower })));
-    s.rsi.setData(data.indicators.rsi14.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })));
-    s.macdLine.setData(data.indicators.macd.map((p) => ({ time: p.time as UTCTimestamp, value: p.macd })));
-    s.macdSignal.setData(data.indicators.macd.map((p) => ({ time: p.time as UTCTimestamp, value: p.signal })));
+    s.sma20.setData(indicators.sma20.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })));
+    s.sma50.setData(indicators.sma50.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })));
+    s.ema12.setData(indicators.ema12.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })));
+    s.ema26.setData(indicators.ema26.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })));
+    s.bbUpper.setData(indicators.bollinger.map((p) => ({ time: p.time as UTCTimestamp, value: p.upper })));
+    s.bbMiddle.setData(indicators.bollinger.map((p) => ({ time: p.time as UTCTimestamp, value: p.middle })));
+    s.bbLower.setData(indicators.bollinger.map((p) => ({ time: p.time as UTCTimestamp, value: p.lower })));
+    s.rsi.setData(indicators.rsi14.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })));
+    s.macdLine.setData(indicators.macd.map((p) => ({ time: p.time as UTCTimestamp, value: p.macd })));
+    s.macdSignal.setData(indicators.macd.map((p) => ({ time: p.time as UTCTimestamp, value: p.signal })));
     s.macdHist.setData(
-      data.indicators.macd.map((p) => ({
+      indicators.macd.map((p) => ({
         time: p.time as UTCTimestamp,
         value: p.histogram,
         color: p.histogram >= 0 ? "#26a69a" : "#ef5350",
@@ -290,13 +295,13 @@ export default function PriceChart({ data, overlays, simpleMode }: Props) {
         });
       }
     }
-  }, [data]);
+  }, [data, indicators]);
 
   useEffect(() => {
     const s = seriesRef.current;
-    if (!s || !data) return;
+    if (!s || !data || !indicators) return;
 
-    const cdcMap = new Map(data.indicators.cdc.map((p) => [p.time, p]));
+    const cdcMap = new Map(indicators.cdc.map((p) => [p.time, p]));
 
     s.candle.applyOptions({ priceFormat: { type: "price", ...pickPriceFormat(data.candles.map((c) => c.close)) } });
 
@@ -316,7 +321,7 @@ export default function PriceChart({ data, overlays, simpleMode }: Props) {
     );
 
     if (overlays.cdc) {
-      const cdcMarkers: SeriesMarker<Time>[] = data.indicators.cdc
+      const cdcMarkers: SeriesMarker<Time>[] = indicators.cdc
         .filter((p) => p.signal !== null)
         .map((p) => ({
           time: p.time as UTCTimestamp,
@@ -329,7 +334,27 @@ export default function PriceChart({ data, overlays, simpleMode }: Props) {
     } else {
       cdcMarkersRef.current?.setMarkers([]);
     }
-  }, [data, overlays.cdc]);
+  }, [data, indicators, overlays.cdc]);
+
+  // Frame each newly loaded chart: the full history is fitted into view in one
+  // go, and switching back to the recent window restores normal bar spacing.
+  // Keyed on what's being shown, so e.g. a zigzag change keeps the user's zoom.
+  const framedRef = useRef<{ key: string; all: boolean } | null>(null);
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart || !data) return;
+    const key = `${data.market}:${data.symbol}:${data.interval}:${data.history}`;
+    if (framedRef.current?.key === key) return;
+    const all = data.history === "all";
+    const timeScale = chart.timeScale();
+    if (all) {
+      timeScale.fitContent();
+    } else if (framedRef.current?.all) {
+      timeScale.applyOptions({ barSpacing: DEFAULT_BAR_SPACING });
+      timeScale.scrollToRealTime();
+    }
+    framedRef.current = { key, all };
+  }, [data]);
 
   useEffect(() => {
     const chart = chartRef.current;

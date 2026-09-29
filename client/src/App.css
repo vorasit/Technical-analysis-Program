@@ -285,6 +285,44 @@
   margin-left: 8px;
 }
 
+.history-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.history-toggle {
+  display: flex;
+  gap: 2px;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.history-toggle button {
+  background: transparent;
+  border: none;
+  color: #8b949e;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.history-toggle button.active {
+  background: #1f6feb33;
+  color: #79c0ff;
+}
+
+.history-span {
+  font-size: 11px;
+  color: #8b949e;
+  white-space: nowrap;
+}
+
 .overlay-toggles {
   display: flex;
   gap: 14px;
