@@ -8,7 +8,9 @@ const INTERVAL_MAP: Record<Interval, string> = {
 
 export async function fetchBinanceCandles(symbol: string, interval: Interval, limit = 400): Promise<Candle[]> {
   const binanceInterval = INTERVAL_MAP[interval];
-  const url = `https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(symbol)}&interval=${binanceInterval}&limit=${limit}`;
+  // data-api.binance.vision serves the same public market data as api.binance.com but isn't
+  // geo-blocked, so it keeps working from cloud regions (e.g. US datacenters) that get HTTP 451.
+  const url = `https://data-api.binance.vision/api/v3/klines?symbol=${encodeURIComponent(symbol)}&interval=${binanceInterval}&limit=${limit}`;
   const res = await fetch(url);
   if (!res.ok) {
     const body = await res.text();

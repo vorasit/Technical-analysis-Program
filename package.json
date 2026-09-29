@@ -1,0 +1,6 @@
+{
+  "name": "ta-wave-hub",
+  "private": true,
+  "type": "module",
+  "description": "Root manifest for the Vercel deployment: marks api/ as ES modules to match server/."
+}
