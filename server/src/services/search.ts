@@ -74,7 +74,7 @@ async function loadBinanceUsdtPairs(): Promise<BinanceExchangeSymbol[]> {
   const cached = cache.get<BinanceExchangeSymbol[]>("binance:usdt-pairs");
   if (cached) return cached;
 
-  const res = await fetch("https://api.binance.com/api/v3/exchangeInfo");
+  const res = await fetch("https://data-api.binance.vision/api/v3/exchangeInfo");
   if (!res.ok) return [];
   const data = (await res.json()) as { symbols: BinanceExchangeSymbol[] };
   const pairs = data.symbols.filter((s) => s.quoteAsset === "USDT" && s.status === "TRADING");

@@ -85,6 +85,18 @@ npm run preview # พรีวิว build ที่ได้ก่อน deploy
 
 เมื่อ deploy จริง ต้องตั้งค่าเซิร์ฟเวอร์ (reverse proxy หรือ Vite build config) ให้ path `/api` ของฝั่ง client ชี้ไปยัง URL ของ server ที่ deploy ไว้จริง เพราะ proxy ใน `vite.config.ts` ใช้ได้เฉพาะตอนรัน dev server เท่านั้น
 
+## Deploy บน Vercel
+
+โปรเจกต์ตั้งค่าไว้ให้ deploy ทั้ง client และ API เป็น Vercel project เดียวได้เลย (ตั้ง Root Directory เป็นรากของ repo ไม่ต้องตั้งค่าเพิ่มในหน้า dashboard):
+
+- `vercel.json` — ติดตั้ง dependency ของทั้ง `server/` และ `client/`, build client ไปที่ `client/dist` แล้วส่งทุก request `/api/*` ไปที่ Vercel Function
+- `api/index.ts` — Vercel Function ที่ใช้ Express app ตัวเดียวกับตอนรันในเครื่อง (`server/src/app.ts`) จึงไม่ต้องแก้ URL ฝั่ง client
+- Function รันที่ภูมิภาค `sin1` (สิงคโปร์) ให้ใกล้ผู้ใช้ในไทย และดึงราคาคริปโตจาก `data-api.binance.vision` ซึ่งไม่โดน Binance บล็อกตามประเทศเหมือน `api.binance.com`
+
+เชื่อม repo กับ Vercel แล้ว ทุกครั้งที่ push ขึ้น `main` จะ deploy production ให้อัตโนมัติ
+
+หมายเหตุ: cache ราคาอยู่ในหน่วยความจำของ Function แต่ละตัว จึงอาจดึงข้อมูลซ้ำบ่อยกว่าตอนรันในเครื่อง ส่วน Journal/Watchlist ยังเก็บใน localStorage ของเบราว์เซอร์เหมือนเดิม (แต่ละเครื่องแยกกัน)
+
 ## คำสั่งอื่น ๆ ที่มีประโยชน์
 
 ```bash
@@ -94,8 +106,12 @@ cd client && npm run lint   # ตรวจโค้ดฝั่ง client ด้
 ## โครงสร้างไฟล์คร่าว ๆ
 
 ```
+api/
+  index.ts              # Vercel Function — re-export Express app จาก server/src/app.ts
+
 server/src/
-  index.ts              # จุดเริ่ม Express app
+  app.ts                # สร้าง Express app (ใช้ร่วมกันทั้งในเครื่องและบน Vercel)
+  index.ts              # จุดเริ่มรันในเครื่อง (app.listen)
   routes/api.ts         # /api/symbols, /api/search, /api/analyze, /api/mtf, /api/backtest, /api/scan/wave3
   services/
     binance.ts           # ดึงแท่งเทียนคริปโตจาก Binance
