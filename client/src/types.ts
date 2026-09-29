@@ -1,5 +1,7 @@
 export type Market = "stock" | "commodity" | "crypto" | "forex";
-export type Interval = "1h" | "1d" | "1w";
+export type Interval = "1h" | "1d" | "1w" | "1mo";
+/** "recent" is the window the analysis runs on; "all" is the symbol's entire listed history, for browsing the chart. */
+export type HistoryRange = "recent" | "all";
 
 export interface Candle {
   time: number;
@@ -211,8 +213,8 @@ export interface AnalyzeResponse {
   symbol: string;
   market: Market;
   interval: Interval;
+  history: HistoryRange;
   candles: Candle[];
-  indicators: Indicators;
   wave: WaveAnalysis;
   insight: PlainLanguageInsight;
 }

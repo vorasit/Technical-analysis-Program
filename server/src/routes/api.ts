@@ -1,8 +1,7 @@
 import { Router } from "express";
-import { Candle, Interval, Market, MtfEntry } from "../types.js";
+import { Candle, HistoryRange, Interval, Market, MtfEntry } from "../types.js";
 import { SYMBOLS } from "../services/symbols.js";
-import { getCandles } from "../services/marketData.js";
-import { sma, ema, rsi, macd, bollinger, cdcActionZone } from "../services/indicators.js";
+import { getCandles, getFullHistory } from "../services/marketData.js";
 import { analyzeWaves } from "../services/elliottWave.js";
 import { mapLimit } from "../services/concurrency.js";
 import { searchSymbols } from "../services/search.js";
@@ -15,7 +14,7 @@ const router = Router();
 
 const VALID_MARKETS: Market[] = ["stock", "commodity", "crypto", "forex"];
 const INVALID_MARKET_MSG = "Invalid or missing market. Use stock, commodity, crypto, or forex.";
-const VALID_INTERVALS: Interval[] = ["1h", "1d", "1w"];
+const VALID_INTERVALS: Interval[] = ["1h", "1d", "1w", "1mo"];
 
 function parseMarket(v: unknown): Market | null {
   return typeof v === "string" && (VALID_MARKETS as string[]).includes(v) ? (v as Market) : null;
@@ -76,34 +75,35 @@ router.get("/analyze", async (req, res) => {
   const interval = parseInterval(req.query.interval) ?? "1d";
   const symbol = typeof req.query.symbol === "string" ? req.query.symbol : null;
   const deviation = req.query.deviation ? Number(req.query.deviation) : 3;
+  const history: HistoryRange = req.query.history === "all" ? "all" : "recent";
 
   if (!market || !symbol) {
     return res.status(400).json({ error: "market and symbol are required." });
   }
 
   try {
-    const candles = await getCandles(market, symbol, interval);
+    // The wave analysis always runs on the recent window, so the signal, insight
+    // and MTF check match the scanner/backtest/journal whichever history is shown.
+    // "all" only widens the candles the chart can scroll back through.
+    const [candles, fullHistory] = await Promise.all([
+      getCandles(market, symbol, interval),
+      history === "all" ? getFullHistory(market, symbol, interval) : null,
+    ]);
     if (candles.length < 20) {
       return res.status(422).json({ error: "Not enough data returned for this symbol/interval." });
     }
     const wave = analyzeWaves(candles, deviation);
     const mtf = await fetchMtfEntries(market, symbol, deviation, { interval, candles });
     const insight = generatePlainLanguageInsight({ wave2to3: wave.wave2to3, mtf });
+    // Chart indicators are computed client-side from these candles: serialized per
+    // point they're ~5x the candles' size, which pushes decades of daily bars
+    // (e.g. ^GSPC since 1927, ~25k bars) past Vercel's 4.5 MB response limit.
     res.json({
       symbol,
       market,
       interval,
-      candles,
-      indicators: {
-        sma20: sma(candles, 20),
-        sma50: sma(candles, 50),
-        ema12: ema(candles, 12),
-        ema26: ema(candles, 26),
-        rsi14: rsi(candles, 14),
-        macd: macd(candles),
-        bollinger: bollinger(candles, 20, 2),
-        cdc: cdcActionZone(candles),
-      },
+      history,
+      candles: fullHistory ?? candles,
       wave,
       insight,
     });

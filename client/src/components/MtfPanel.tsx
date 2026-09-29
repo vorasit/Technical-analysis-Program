@@ -6,6 +6,7 @@ const INTERVAL_LABEL: Record<Interval, string> = {
   "1h": "1H",
   "1d": "1D",
   "1w": "1W",
+  "1mo": "1M",
 };
 
 const PHASE_LABEL: Record<string, string> = {

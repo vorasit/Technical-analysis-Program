@@ -1,4 +1,15 @@
-import type { AnalyzeResponse, BacktestResponse, Interval, JournalStatus, JournalTarget, Market, MtfEntry, ScanResult, SymbolInfo } from "./types";
+import type {
+  AnalyzeResponse,
+  BacktestResponse,
+  HistoryRange,
+  Interval,
+  JournalStatus,
+  JournalTarget,
+  Market,
+  MtfEntry,
+  ScanResult,
+  SymbolInfo,
+} from "./types";
 
 async function jsonOrThrow<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -12,8 +23,8 @@ export function getSymbols(market: Market): Promise<SymbolInfo[]> {
   return fetch(`/api/symbols?market=${market}`).then((r) => jsonOrThrow<SymbolInfo[]>(r));
 }
 
-export function analyze(market: Market, symbol: string, interval: Interval, deviation: number): Promise<AnalyzeResponse> {
-  const params = new URLSearchParams({ market, symbol, interval, deviation: String(deviation) });
+export function analyze(market: Market, symbol: string, interval: Interval, deviation: number, history: HistoryRange): Promise<AnalyzeResponse> {
+  const params = new URLSearchParams({ market, symbol, interval, deviation: String(deviation), history });
   return fetch(`/api/analyze?${params.toString()}`).then((r) => jsonOrThrow<AnalyzeResponse>(r));
 }
 
